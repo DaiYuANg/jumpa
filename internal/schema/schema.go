@@ -17,7 +17,7 @@ type UserRow struct {
 
 type UserSchema struct {
 	dbx.Schema[UserRow]
-	ID        dbx.Column[UserRow, int64]     `dbx:"id,pk,auto"`
+	ID        dbx.Column[UserRow, int64]     `dbx:"id,pk,snowflake"`
 	Name      dbx.Column[UserRow, string]    `dbx:"name"`
 	Email     dbx.Column[UserRow, string]    `dbx:"email,unique"`
 	Age       dbx.Column[UserRow, int]       `dbx:"age"`

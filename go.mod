@@ -15,7 +15,7 @@ require (
 	github.com/DaiYuANg/arcgo/authx v0.0.1
 	github.com/DaiYuANg/arcgo/collectionx v0.0.1
 	github.com/DaiYuANg/arcgo/configx v0.0.1
-	github.com/DaiYuANg/arcgo/dbx v0.0.1
+	github.com/DaiYuANg/arcgo/dbx v0.0.2
 	github.com/DaiYuANg/arcgo/dbx/migrate v0.0.1
 	github.com/DaiYuANg/arcgo/dix v0.0.1
 	github.com/DaiYuANg/arcgo/eventx v0.0.1
@@ -78,7 +78,7 @@ require (
 	github.com/MirrexOne/unqueryvet v1.5.4 // indirect
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.1 // indirect
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
-	github.com/agext/levenshtein v1.2.1 // indirect
+	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/alecthomas/chroma/v2 v2.23.1 // indirect
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
@@ -88,7 +88,6 @@ require (
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/alingse/nilnesserr v0.2.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
-	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/ashanbrown/forbidigo/v2 v2.3.0 // indirect
 	github.com/ashanbrown/makezero/v2 v2.1.0 // indirect
@@ -171,7 +170,7 @@ require (
 	github.com/go-json-experiment/json v0.0.0-20260214004413-d219187c3433 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-openapi/inflect v0.19.0 // indirect
+	github.com/go-openapi/inflect v0.21.5 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
@@ -218,7 +217,7 @@ require (
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
+	github.com/hashicorp/hcl/v2 v2.24.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -278,7 +277,7 @@ require (
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
+	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -373,8 +372,8 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.3.0 // indirect
 	github.com/ykadowak/zerologlint v0.1.5 // indirect
-	github.com/zclconf/go-cty v1.14.4 // indirect
-	github.com/zclconf/go-cty-yaml v1.1.0 // indirect
+	github.com/zclconf/go-cty v1.18.0 // indirect
+	github.com/zclconf/go-cty-yaml v1.2.0 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.14.0 // indirect
