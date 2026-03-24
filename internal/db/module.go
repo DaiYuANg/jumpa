@@ -18,11 +18,6 @@ var Module = dix.NewModule("db",
 			if err != nil {
 				panic(err)
 			}
-			userSchema := schema.UserSchema{}
-			users := dbx.MustSchema("users", userSchema)
-			if _, err := database.AutoMigrate(context.Background(), users); err != nil {
-				panic(err)
-			}
 			return database
 		}),
 		dix.Provider0(func() schema.UserSchema {

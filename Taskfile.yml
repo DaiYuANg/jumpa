@@ -1,13 +1,52 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 
-version: '3'
+version: "3"
 
 vars:
-  GREETING: Hello, world!
+  APP_IMAGE_SERVER: arcgo-rbac-server:latest
+  APP_IMAGE_MIGRATE: arcgo-rbac-migrate:latest
+  COMPOSE_PROD_FILE: docker-compose.prod.yml
 
 tasks:
   default:
-    desc: Print a greeting message
+    desc: Show available tasks
     cmds:
-      - echo "{{.GREETING}}"
-    silent: true
+      - task --list
+
+  docker:build:server:
+    desc: Build server image (multi-stage target=server)
+    cmds:
+      - docker build --target server -t {{.APP_IMAGE_SERVER}} .
+
+  docker:build:migrate:
+    desc: Build migrate image (multi-stage target=migrate)
+    cmds:
+      - docker build --target migrate -t {{.APP_IMAGE_MIGRATE}} .
+
+  docker:build:all:
+    desc: Build both server and migrate images
+    deps:
+      - docker:build:server
+      - docker:build:migrate
+
+  compose:prod:up:
+    desc: Start production-like stack with one-shot migrate
+    deps:
+      - docker:build:all
+    cmds:
+      - docker compose -f {{.COMPOSE_PROD_FILE}} up -d
+
+  compose:prod:up:buildless:
+    desc: Start production-like stack without rebuilding images
+    cmds:
+      - docker compose -f {{.COMPOSE_PROD_FILE}} up -d
+
+  compose:prod:down:
+    desc: Stop production-like stack
+    cmds:
+      - docker compose -f {{.COMPOSE_PROD_FILE}} down
+
+  compose:prod:logs:
+    desc: Tail logs of production-like stack
+    cmds:
+      - docker compose -f {{.COMPOSE_PROD_FILE}} logs -f --tail=200

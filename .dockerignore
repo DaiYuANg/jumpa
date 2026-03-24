@@ -1,0 +1,12 @@
+.git
+.gitignore
+.idea
+
+bin
+dist
+tmp
+coverage
+*.log
+
+docker-compose.yaml
+Taskfile.yml
