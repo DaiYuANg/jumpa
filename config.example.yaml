@@ -1,0 +1,15 @@
+server:
+  port: 8080
+
+db:
+  # sqlite | mysql | postgres
+  driver: sqlite
+  dsn: "file:backend?mode=memory&cache=shared"
+
+  # MySQL example:
+  # driver: mysql
+  # dsn: "user:password@tcp(127.0.0.1:3306)/arcgo?parseTime=true&loc=Local"
+
+  # PostgreSQL example:
+  # driver: postgres
+  # dsn: "postgres://user:password@127.0.0.1:5432/arcgo?sslmode=disable"
