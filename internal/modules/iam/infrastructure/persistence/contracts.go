@@ -1,6 +1,29 @@
-package repo
+package persistence
 
-import "context"
+import (
+	"context"
+
+	legacydomain "github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
+	dbxrepo "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence/dbx"
+)
+
+type UserRepository interface {
+	List(ctx context.Context, search string, limit, offset int) ([]legacydomain.User, int, error)
+	GetByID(ctx context.Context, id int64) (legacydomain.User, bool, error)
+	Create(ctx context.Context, in legacydomain.CreateUserInput) (legacydomain.User, error)
+	Update(ctx context.Context, id int64, in legacydomain.UpdateUserInput) (legacydomain.User, bool, error)
+	Delete(ctx context.Context, id int64) (bool, error)
+}
+
+type Role = dbxrepo.Role
+type PermissionGroup = dbxrepo.PermissionGroup
+type Permission = dbxrepo.Permission
+type CreateRoleInput = dbxrepo.CreateRoleInput
+type PatchRoleInput = dbxrepo.PatchRoleInput
+type CreatePermissionGroupInput = dbxrepo.CreatePermissionGroupInput
+type PatchPermissionGroupInput = dbxrepo.PatchPermissionGroupInput
+type CreatePermissionInput = dbxrepo.CreatePermissionInput
+type PatchPermissionInput = dbxrepo.PatchPermissionInput
 
 type RoleRepository interface {
 	ListRoles(ctx context.Context) ([]Role, error)

@@ -9,9 +9,8 @@ import (
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/event"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/http"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/kv"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/repo"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/scheduler"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/service"
 	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/logx"
 )
@@ -29,8 +28,7 @@ func Run() {
 			event.Module,
 			db.Module,
 			kv.Module,
-			repo.Module,
-			service.Module,
+			iam.Module,
 			scheduler.Module,
 			http.Module,
 		),
