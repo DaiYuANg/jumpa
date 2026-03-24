@@ -12,6 +12,8 @@ tool (
 )
 
 require (
+	github.com/DaiYuANg/arcgo/authx v0.0.1
+	github.com/DaiYuANg/arcgo/collectionx v0.0.1
 	github.com/DaiYuANg/arcgo/configx v0.0.1
 	github.com/DaiYuANg/arcgo/dbx v0.0.1
 	github.com/DaiYuANg/arcgo/dbx/migrate v0.0.1
@@ -28,7 +30,9 @@ require (
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gofiber/fiber/v2 v2.52.12
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.8.0
+	github.com/samber/lo v1.53.0
 	modernc.org/sqlite v1.47.0
 )
 
@@ -60,7 +64,6 @@ require (
 	github.com/Antonboom/nilnil v1.1.1 // indirect
 	github.com/Antonboom/testifylint v1.6.4 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/DaiYuANg/arcgo/collectionx v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/echo v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/gin v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.0.1 // indirect
@@ -319,7 +322,6 @@ require (
 	github.com/samber/go-singleflightx v0.3.2 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 	github.com/samber/hot v0.13.0 // indirect
-	github.com/samber/lo v1.53.0 // indirect
 	github.com/samber/mo v1.16.0 // indirect
 	github.com/samber/oops v1.21.0 // indirect
 	github.com/samber/oops/loggers/zerolog v0.0.0-20260225193831-1a99714a330e // indirect

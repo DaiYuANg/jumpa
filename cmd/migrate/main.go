@@ -25,10 +25,8 @@ var embeddedMigrations embed.FS
 func loadConfig() (config2.AppConfig, error) {
 	var cfg config2.AppConfig
 	loader := configx.New(
-		configx.WithDefaults(map[string]any{
-			"db.driver": "sqlite",
-			"db.dsn":    "file:backend?mode=memory&cache=shared",
-		}),
+		configx.WithDefaultsFrom(config2.DefaultAppConfig()),
+		configx.WithDotenv(".env"),
 		configx.WithEnvPrefix("APP_"),
 	)
 	if err := loader.Load(&cfg); err != nil {
@@ -51,7 +49,7 @@ func selectDialect(driver string) (dialect.Dialect, error) {
 }
 
 func main() {
-	logger := logx.MustNew(logx.WithConsole(true), logx.WithDebugLevel())
+	logger := logx.MustNew(logx.WithConsole(true), logx.WithTraceLevel())
 	defer func() { _ = logx.Close(logger) }()
 
 	cfg, err := loadConfig()

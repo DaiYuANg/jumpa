@@ -14,21 +14,8 @@ var Module = dix.NewModule("config",
 		dix.Provider1(func(log *slog.Logger) AppConfig {
 			var cfg AppConfig
 			loader := configx.New(
-				configx.WithDefaults(map[string]any{
-					"server.port":             8080,
-					"db.driver":               "sqlite",
-					"db.dsn":                  "file:backend?mode=memory&cache=shared",
-					"scheduler.enabled":       true,
-					"scheduler.heartbeat_sec": 60,
-					"scheduler.distributed.enabled":    false,
-					"scheduler.distributed.key_prefix": "gocron:lock",
-					"scheduler.distributed.ttl_sec":    30,
-					"valkey.enabled":          false,
-					"valkey.addr":             "127.0.0.1:6379",
-					"valkey.password":         "",
-					"valkey.db":               0,
-					"valkey.use_tls":          false,
-				}),
+				configx.WithDefaultsFrom(DefaultAppConfig()),
+				configx.WithDotenv(".env"),
 				configx.WithEnvPrefix("APP_"),
 			)
 			if err := loader.Load(&cfg); err != nil {

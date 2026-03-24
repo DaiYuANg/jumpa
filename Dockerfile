@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
-ARG GO_VERSION=1.26
-ARG ALPINE_VERSION=3.21
+ARG GO_VERSION=1.26.1
+ARG ALPINE_VERSION=3.23
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 WORKDIR /src
@@ -18,11 +18,14 @@ COPY . .
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-  go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server && \
-  CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-  go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate && \
-  upx --best --lzma /out/server /out/migrate
+RUN go tool task build:bins:upx GOOS=${TARGETOS} GOARCH=${TARGETARCH} && \
+  if [ "${TARGETOS}" = "windows" ]; then \
+    cp /src/dist/server.exe /out/server && \
+    cp /src/dist/migrate.exe /out/migrate ; \
+  else \
+    cp /src/dist/server /out/server && \
+    cp /src/dist/migrate /out/migrate ; \
+  fi
 
 FROM scratch AS server
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt

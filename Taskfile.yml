@@ -6,12 +6,56 @@ vars:
   APP_IMAGE_SERVER: arcgo-rbac-server:latest
   APP_IMAGE_MIGRATE: arcgo-rbac-migrate:latest
   COMPOSE_PROD_FILE: docker-compose.prod.yml
+  GOOS: '{{default OS .GOOS}}'
+  GOARCH: '{{default ARCH .GOARCH}}'
+  BIN_EXT: '{{if eq .GOOS "windows"}}.exe{{end}}'
+  DIST_DIR: dist
 
 tasks:
   default:
     desc: Show available tasks
     cmds:
       - task --list
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - gofmt -w .
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  test:
+    desc: Run Go tests
+    cmds:
+      - go test ./...
+
+  check:
+    desc: Run fmt check + lint + tests
+    cmds:
+      - gofmt -l .
+      - golangci-lint run ./...
+      - go test ./...
+
+  build:bins:
+    desc: Build server and migrate binaries into dist
+    cmds:
+      - mkdir -p {{.DIST_DIR}}
+      - go build -trimpath -ldflags="-s -w" -o {{.DIST_DIR}}/server{{.BIN_EXT}} ./cmd/server
+      - go build -trimpath -ldflags="-s -w" -o {{.DIST_DIR}}/migrate{{.BIN_EXT}} ./cmd/migrate
+    env:
+      CGO_ENABLED: "0"
+      GOOS: "{{.GOOS}}"
+      GOARCH: "{{.GOARCH}}"
+
+  build:bins:upx:
+    desc: Build binaries and compress with UPX
+    deps:
+      - build:bins
+    cmds:
+      - upx --best --lzma {{.DIST_DIR}}/server{{.BIN_EXT}} {{.DIST_DIR}}/migrate{{.BIN_EXT}}
 
   docker:build:server:
     desc: Build server image (multi-stage target=server)

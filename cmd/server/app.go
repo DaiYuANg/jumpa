@@ -17,7 +17,7 @@ import (
 )
 
 func Run() {
-	logger := logx.MustNew(logx.WithConsole(true), logx.WithDebugLevel())
+	logger := logx.MustNew(logx.WithConsole(true), logx.WithTraceLevel())
 	defer func() { _ = logx.Close(logger) }()
 
 	a := dix.New(
