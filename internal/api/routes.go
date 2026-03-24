@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/domain"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
 	"github.com/DaiYuANg/arcgo/httpx"
 	"github.com/danielgtaylor/huma/v2"
 )

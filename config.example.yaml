@@ -13,3 +13,18 @@ db:
   # PostgreSQL example:
   # driver: postgres
   # dsn: "postgres://user:password@127.0.0.1:5432/arcgo?sslmode=disable"
+
+scheduler:
+  enabled: true
+  heartbeat_sec: 60
+  distributed:
+    enabled: false
+    key_prefix: "gocron:lock"
+    ttl_sec: 30
+
+valkey:
+  enabled: false
+  addr: "127.0.0.1:6379"
+  password: ""
+  db: 0
+  use_tls: false

@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/domain"
-	"github.com/DaiYuANg/arcgo-rbac-template/event"
-	"github.com/DaiYuANg/arcgo-rbac-template/repo"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/event"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/repo"
 	"github.com/DaiYuANg/arcgo/eventx"
 )
 

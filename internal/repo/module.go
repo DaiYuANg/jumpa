@@ -1,8 +1,8 @@
 package repo
 
 import (
-	"github.com/DaiYuANg/arcgo-rbac-template/db"
-	"github.com/DaiYuANg/arcgo-rbac-template/schema"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/db"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/schema"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dix"
 )

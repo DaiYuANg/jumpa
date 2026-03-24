@@ -17,13 +17,16 @@ require (
 	github.com/DaiYuANg/arcgo/dix v0.0.1
 	github.com/DaiYuANg/arcgo/eventx v0.0.1
 	github.com/DaiYuANg/arcgo/httpx v0.0.1
-	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.0.1
+	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.0.1
+	github.com/DaiYuANg/arcgo/kvx v0.0.2
+	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.0.2
 	github.com/DaiYuANg/arcgo/logx v0.0.1
 	github.com/DaiYuANg/arcgo/pkg/randomport v0.0.1
 	github.com/danielgtaylor/huma/v2 v2.37.2
-	github.com/go-chi/chi/v5 v5.2.5
+	github.com/go-co-op/gocron/v2 v2.19.1
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/go-sql-driver/mysql v1.9.3
+	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/jackc/pgx/v5 v5.5.4
 	modernc.org/sqlite v1.47.0
 )
@@ -58,8 +61,8 @@ require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/DaiYuANg/arcgo/collectionx v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/echo v0.0.1 // indirect
-	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/gin v0.0.1 // indirect
+	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/observabilityx v0.0.1 // indirect
 	github.com/Djarvur/go-err113 v0.1.1 // indirect
 	github.com/DmitriyVTitov/size v1.5.0 // indirect
@@ -80,6 +83,7 @@ require (
 	github.com/alfatraining/structtag v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/alingse/nilnesserr v0.2.0 // indirect
+	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/ashanbrown/forbidigo/v2 v2.3.0 // indirect
@@ -157,6 +161,7 @@ require (
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/ghostiam/protogetter v0.3.20 // indirect
+	github.com/go-chi/chi/v5 v5.2.5 // indirect
 	github.com/go-critic/go-critic v0.14.3 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.2 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260214004413-d219187c3433 // indirect
@@ -219,6 +224,7 @@ require (
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jjti/go-spancheck v0.6.5 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/julz/importas v0.2.0 // indirect
 	github.com/kaptinlin/go-i18n v0.2.12 // indirect
 	github.com/kaptinlin/jsonpointer v0.4.17 // indirect
@@ -300,6 +306,7 @@ require (
 	github.com/raeperd/recvcheck v0.2.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/ryancurrah/gomodguard v1.4.1 // indirect
@@ -352,6 +359,9 @@ require (
 	github.com/urfave/cli/v3 v3.7.0 // indirect
 	github.com/uudashr/gocognit v1.2.1 // indirect
 	github.com/uudashr/iface v1.4.1 // indirect
+	github.com/valkey-io/valkey-go v1.0.73 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasthttp v1.69.0 // indirect
 	github.com/xen0n/gosmopolitan v1.3.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect

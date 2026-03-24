@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/domain"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
 	"github.com/DaiYuANg/arcgo/dbx"
 )
 

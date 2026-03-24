@@ -1,15 +1,17 @@
-package app
+package main
 
 import (
 	"log/slog"
 	"os"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/config"
-	"github.com/DaiYuANg/arcgo-rbac-template/db"
-	"github.com/DaiYuANg/arcgo-rbac-template/event"
-	"github.com/DaiYuANg/arcgo-rbac-template/http"
-	"github.com/DaiYuANg/arcgo-rbac-template/repo"
-	"github.com/DaiYuANg/arcgo-rbac-template/service"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/config"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/db"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/event"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/http"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/kv"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/repo"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/scheduler"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/service"
 	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/logx"
 )
@@ -26,8 +28,10 @@ func Run() {
 			config.Module,
 			event.Module,
 			db.Module,
+			kv.Module,
 			repo.Module,
 			service.Module,
+			scheduler.Module,
 			http.Module,
 		),
 	)

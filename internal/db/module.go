@@ -4,16 +4,16 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/config"
-	"github.com/DaiYuANg/arcgo-rbac-template/schema"
+	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/schema"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dix"
 )
 
 var Module = dix.NewModule("db",
-	dix.WithModuleImports(config.Module),
+	dix.WithModuleImports(config2.Module),
 	dix.WithModuleProviders(
-		dix.Provider2(func(cfg config.AppConfig, log *slog.Logger) *dbx.DB {
+		dix.Provider2(func(cfg config2.AppConfig, log *slog.Logger) *dbx.DB {
 			database, err := Open(cfg.DB.Driver, cfg.DB.DSN, DefaultOpts(log)...)
 			if err != nil {
 				panic(err)
