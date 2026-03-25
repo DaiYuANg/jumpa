@@ -3,6 +3,7 @@ package dbx
 import (
 	"context"
 
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
 	"github.com/samber/lo"
@@ -24,7 +25,7 @@ type userRoleRepo struct {
 	userRoleRepo *repository.Base[userRoleRow, userRoleSchema]
 }
 
-func NewUserRoleRepository(db *dbx.DB) UserRoleRepository {
+func NewUserRoleRepository(db *dbx.DB) persistence.UserRoleRepository {
 	urs := dbx.MustSchema("app_user_roles", userRoleSchema{})
 	return &userRoleRepo{
 		urs:          urs,

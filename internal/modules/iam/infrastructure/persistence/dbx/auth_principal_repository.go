@@ -3,6 +3,7 @@ package dbx
 import (
 	"context"
 
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
 )
@@ -36,7 +37,7 @@ type authPrincipalRepo struct {
 	principalRoleRepo *repository.Base[authPrincipalRoleRow, authPrincipalRoleSchema]
 }
 
-func NewAuthPrincipalRepository(db *dbx.DB) AuthPrincipalRepository {
+func NewAuthPrincipalRepository(db *dbx.DB) persistence.AuthPrincipalRepository {
 	aps := dbx.MustSchema("app_auth_principals", authPrincipalSchema{})
 	apr := dbx.MustSchema("app_auth_principal_roles", authPrincipalRoleSchema{})
 	return &authPrincipalRepo{

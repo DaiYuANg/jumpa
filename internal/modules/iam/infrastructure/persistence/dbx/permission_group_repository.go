@@ -5,6 +5,7 @@ import (
   "errors"
   "time"
 
+ "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
   "github.com/DaiYuANg/arcgo/dbx"
   "github.com/DaiYuANg/arcgo/dbx/repository"
   "github.com/samber/lo"
@@ -30,7 +31,7 @@ type permissionGroupRepo struct {
   groupRepo *repository.Base[permissionGroupRow, permissionGroupSchema]
 }
 
-func NewPermissionGroupRepository(db *dbx.DB) PermissionGroupRepository {
+func NewPermissionGroupRepository(db *dbx.DB) persistence.PermissionGroupRepository {
   pgs := dbx.MustSchema("app_permission_groups", permissionGroupSchema{})
   return &permissionGroupRepo{
     pgs:       pgs,
@@ -38,38 +39,38 @@ func NewPermissionGroupRepository(db *dbx.DB) PermissionGroupRepository {
   }
 }
 
-func (r *permissionGroupRepo) ListPermissionGroups(ctx context.Context) ([]PermissionGroup, error) {
+func (r *permissionGroupRepo) ListPermissionGroups(ctx context.Context) ([]persistence.PermissionGroup, error) {
   rows, err := r.groupRepo.ListSpec(ctx, repository.OrderBy(r.pgs.ID.Asc()))
   if err != nil {
     return nil, err
   }
-  return lo.Map(rows, func(row permissionGroupRow, _ int) PermissionGroup {
-    return PermissionGroup{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}
+  return lo.Map(rows, func(row permissionGroupRow, _ int) persistence.PermissionGroup {
+    return persistence.PermissionGroup{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}
   }), nil
 }
 
-func (r *permissionGroupRepo) GetPermissionGroup(ctx context.Context, id string) (PermissionGroup, bool, error) {
+func (r *permissionGroupRepo) GetPermissionGroup(ctx context.Context, id string) (persistence.PermissionGroup, bool, error) {
   row, err := r.groupRepo.FirstSpec(ctx, repository.Where(r.pgs.ID.Eq(id)))
   if err != nil {
     if errors.Is(err, repository.ErrNotFound) {
-      return PermissionGroup{}, false, nil
+      return persistence.PermissionGroup{}, false, nil
     }
-    return PermissionGroup{}, false, err
+    return persistence.PermissionGroup{}, false, err
   }
-  return PermissionGroup{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, true, nil
+  return persistence.PermissionGroup{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, true, nil
 }
 
-func (r *permissionGroupRepo) CreatePermissionGroup(ctx context.Context, in CreatePermissionGroupInput) (PermissionGroup, error) {
+func (r *permissionGroupRepo) CreatePermissionGroup(ctx context.Context, in persistence.CreatePermissionGroupInput) (persistence.PermissionGroup, error) {
   now := time.Now().UTC()
   row := permissionGroupRow{ID: in.ID, Name: in.Name, Description: in.Description, CreatedAt: now}
   if err := r.groupRepo.Create(ctx, &row); err != nil {
-    return PermissionGroup{}, err
+    return persistence.PermissionGroup{}, err
   }
   it, _, err := r.GetPermissionGroup(ctx, in.ID)
   return it, err
 }
 
-func (r *permissionGroupRepo) UpdatePermissionGroup(ctx context.Context, id string, in PatchPermissionGroupInput) (PermissionGroup, bool, error) {
+func (r *permissionGroupRepo) UpdatePermissionGroup(ctx context.Context, id string, in persistence.PatchPermissionGroupInput) (persistence.PermissionGroup, bool, error) {
   var assignments []dbx.Assignment
   if in.Name != nil {
     assignments = append(assignments, r.pgs.Name.Set(*in.Name))
@@ -80,11 +81,11 @@ func (r *permissionGroupRepo) UpdatePermissionGroup(ctx context.Context, id stri
   if len(assignments) > 0 {
     res, err := r.groupRepo.UpdateByID(ctx, id, assignments...)
     if err != nil {
-      return PermissionGroup{}, false, err
+      return persistence.PermissionGroup{}, false, err
     }
     ra, _ := res.RowsAffected()
     if ra == 0 {
-      return PermissionGroup{}, false, nil
+      return persistence.PermissionGroup{}, false, nil
     }
   }
   it, ok, err := r.GetPermissionGroup(ctx, id)

@@ -2,10 +2,10 @@ package persistence
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	legacydomain "github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
-	dbxrepo "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence/dbx"
-	"github.com/DaiYuANg/arcgo/dbx"
 )
 
 type UserRepository interface {
@@ -16,33 +16,83 @@ type UserRepository interface {
 	Delete(ctx context.Context, id int64) (bool, error)
 }
 
-type Role = dbxrepo.Role
-type RoleRecord = dbxrepo.RoleRecord
-type PermissionGroup = dbxrepo.PermissionGroup
-type Permission = dbxrepo.Permission
-type CreateRoleInput = dbxrepo.CreateRoleInput
-type PatchRoleInput = dbxrepo.PatchRoleInput
-type CreatePermissionGroupInput = dbxrepo.CreatePermissionGroupInput
-type PatchPermissionGroupInput = dbxrepo.PatchPermissionGroupInput
-type CreatePermissionInput = dbxrepo.CreatePermissionInput
-type PatchPermissionInput = dbxrepo.PatchPermissionInput
-
-type RoleRepository interface {
-	ListRoles(ctx context.Context, session dbx.Session) ([]RoleRecord, error)
-	GetRole(ctx context.Context, session dbx.Session, id string) (RoleRecord, bool, error)
-	CreateRole(ctx context.Context, session dbx.Session, in CreateRoleInput) (RoleRecord, error)
-	UpdateRole(ctx context.Context, session dbx.Session, id string, in PatchRoleInput) (RoleRecord, bool, error)
-	DeleteRole(ctx context.Context, session dbx.Session, id string) (bool, error)
+type RoleRecord struct {
+	ID          string
+	Name        string
+	Description string
+	CreatedAt   time.Time
 }
 
-type RolePermissionGroupPair = dbxrepo.RolePermissionGroupPair
+type CreateRoleInput struct {
+	ID          string
+	Name        string
+	Description string
+}
+
+type PatchRoleInput struct {
+	Name        *string
+	Description *string
+}
+
+type PermissionGroup struct {
+	ID          string
+	Name        string
+	Description string
+	CreatedAt   time.Time
+}
+
+type Permission struct {
+	ID        string
+	Name      string
+	Code      string
+	GroupID   *string
+	CreatedAt time.Time
+}
+
+type CreatePermissionGroupInput struct{ ID, Name, Description string }
+type PatchPermissionGroupInput struct{ Name, Description *string }
+
+type CreatePermissionInput struct {
+	ID      string
+	Name    string
+	Code    string
+	GroupID *string
+}
+
+type PatchPermissionInput struct {
+	Name    *string
+	Code    *string
+	GroupID *string
+}
+
+type RoleRepository interface {
+	ListRoles(ctx context.Context) ([]RoleRecord, error)
+	GetRole(ctx context.Context, id string) (RoleRecord, bool, error)
+	CreateRole(ctx context.Context, in CreateRoleInput) (RoleRecord, error)
+	UpdateRole(ctx context.Context, id string, in PatchRoleInput) (RoleRecord, bool, error)
+	DeleteRole(ctx context.Context, id string) (bool, error)
+}
+
+type RolePermissionGroupPair struct {
+	RoleID            string
+	PermissionGroupID string
+}
 
 type RolePermissionGroupRepository interface {
-	ListPairs(ctx context.Context, session dbx.Session) ([]RolePermissionGroupPair, error)
-	ListPairsByRoleIDs(ctx context.Context, session dbx.Session, roleIDs []string) ([]RolePermissionGroupPair, error)
-	ListPermissionGroupIDsByRoleID(ctx context.Context, session dbx.Session, roleID string) ([]string, error)
-	ReplacePermissionGroupIDs(ctx context.Context, session dbx.Session, roleID string, permissionGroupIDs []string) error
-	DeleteByRoleID(ctx context.Context, session dbx.Session, roleID string) error
+	ListPairs(ctx context.Context) ([]RolePermissionGroupPair, error)
+	ListPairsByRoleIDs(ctx context.Context, roleIDs []string) ([]RolePermissionGroupPair, error)
+	ListPermissionGroupIDsByRoleID(ctx context.Context, roleID string) ([]string, error)
+	ReplacePermissionGroupIDs(ctx context.Context, roleID string, permissionGroupIDs []string) error
+	DeleteByRoleID(ctx context.Context, roleID string) error
+}
+
+type UnitOfWork interface {
+	InTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx context.Context, tx UnitOfWorkTx) error) error
+}
+
+type UnitOfWorkTx interface {
+	Roles() RoleRepository
+	RolePermissionGroups() RolePermissionGroupRepository
 }
 
 type PermissionGroupRepository interface {

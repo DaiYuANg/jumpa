@@ -7,6 +7,7 @@ import (
 	"time"
 
 	legacydomain "github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/schema"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
@@ -15,21 +16,13 @@ import (
 type UserRow = schema.UserRow
 type UserSchema = schema.UserSchema
 
-type UserRepository interface {
-	List(ctx context.Context, search string, limit, offset int) ([]legacydomain.User, int, error)
-	GetByID(ctx context.Context, id int64) (legacydomain.User, bool, error)
-	Create(ctx context.Context, in legacydomain.CreateUserInput) (legacydomain.User, error)
-	Update(ctx context.Context, id int64, in legacydomain.UpdateUserInput) (legacydomain.User, bool, error)
-	Delete(ctx context.Context, id int64) (bool, error)
-}
-
 type userRepo struct {
 	db     *dbx.DB
 	schema UserSchema
 	repo   *repository.Base[UserRow, UserSchema]
 }
 
-func NewUserRepository(db *dbx.DB, s UserSchema) UserRepository {
+func NewUserRepository(db *dbx.DB, s UserSchema) persistence.UserRepository {
 	return &userRepo{db: db, schema: s, repo: repository.New[UserRow](db, s)}
 }
 

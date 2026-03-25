@@ -3,62 +3,65 @@ package dbx
 import (
 	"context"
 
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/samber/lo"
 )
 
 type rolePermissionGroupRepo struct {
+	session dbx.Session
 	rpg    rolePermissionGroupSchema
 	mapper dbx.Mapper[rolePermissionGroupRow]
 }
 
-func NewRolePermissionGroupRepository(_ *dbx.DB) RolePermissionGroupRepository {
+func NewRolePermissionGroupRepository(session dbx.Session) persistence.RolePermissionGroupRepository {
 	rpg := dbx.MustSchema("app_role_permission_groups", rolePermissionGroupSchema{})
 	return &rolePermissionGroupRepo{
+		session: session,
 		rpg:    rpg,
 		mapper: dbx.MustMapper[rolePermissionGroupRow](rpg),
 	}
 }
 
-func (r *rolePermissionGroupRepo) ListPairs(ctx context.Context, session dbx.Session) ([]RolePermissionGroupPair, error) {
-	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, session, dbx.Select(r.rpg.AllColumns()...).From(r.rpg), r.mapper)
+func (r *rolePermissionGroupRepo) ListPairs(ctx context.Context) ([]persistence.RolePermissionGroupPair, error) {
+	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, r.session, dbx.Select(r.rpg.AllColumns()...).From(r.rpg), r.mapper)
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) RolePermissionGroupPair {
-		return RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
+	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) persistence.RolePermissionGroupPair {
+		return persistence.RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
 	}), nil
 }
 
-func (r *rolePermissionGroupRepo) ListPairsByRoleIDs(ctx context.Context, session dbx.Session, roleIDs []string) ([]RolePermissionGroupPair, error) {
+func (r *rolePermissionGroupRepo) ListPairsByRoleIDs(ctx context.Context, roleIDs []string) ([]persistence.RolePermissionGroupPair, error) {
 	ids := normalizeIDs(roleIDs)
 	if len(ids) == 0 {
-		return []RolePermissionGroupPair{}, nil
+		return []persistence.RolePermissionGroupPair{}, nil
 	}
 	rows, err := dbx.QueryAll[rolePermissionGroupRow](
 		ctx,
-		session,
+		r.session,
 		dbx.Select(r.rpg.AllColumns()...).From(r.rpg).Where(r.rpg.RoleID.In(ids...)),
 		r.mapper,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) RolePermissionGroupPair {
-		return RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
+	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) persistence.RolePermissionGroupPair {
+		return persistence.RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
 	}), nil
 }
 
-func (r *rolePermissionGroupRepo) ListPermissionGroupIDsByRoleID(ctx context.Context, session dbx.Session, roleID string) ([]string, error) {
-	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, session, dbx.Select(r.rpg.AllColumns()...).From(r.rpg).Where(r.rpg.RoleID.Eq(roleID)), r.mapper)
+func (r *rolePermissionGroupRepo) ListPermissionGroupIDsByRoleID(ctx context.Context, roleID string) ([]string, error) {
+	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, r.session, dbx.Select(r.rpg.AllColumns()...).From(r.rpg).Where(r.rpg.RoleID.Eq(roleID)), r.mapper)
 	if err != nil {
 		return nil, err
 	}
 	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) string { return row.PermissionGroupID }), nil
 }
 
-func (r *rolePermissionGroupRepo) ReplacePermissionGroupIDs(ctx context.Context, session dbx.Session, roleID string, permissionGroupIDs []string) error {
-	if _, err := dbx.Exec(ctx, session, dbx.DeleteFrom(r.rpg).Where(r.rpg.RoleID.Eq(roleID))); err != nil {
+func (r *rolePermissionGroupRepo) ReplacePermissionGroupIDs(ctx context.Context, roleID string, permissionGroupIDs []string) error {
+	if _, err := dbx.Exec(ctx, r.session, dbx.DeleteFrom(r.rpg).Where(r.rpg.RoleID.Eq(roleID))); err != nil {
 		return err
 	}
 	ids := normalizeIDs(permissionGroupIDs)
@@ -69,12 +72,12 @@ func (r *rolePermissionGroupRepo) ReplacePermissionGroupIDs(ctx context.Context,
 	for _, gid := range ids {
 		insert = insert.Values(r.rpg.RoleID.Set(roleID), r.rpg.PermissionGroupID.Set(gid))
 	}
-	_, err := dbx.Exec(ctx, session, insert)
+	_, err := dbx.Exec(ctx, r.session, insert)
 	return err
 }
 
-func (r *rolePermissionGroupRepo) DeleteByRoleID(ctx context.Context, session dbx.Session, roleID string) error {
-	_, err := dbx.Exec(ctx, session, dbx.DeleteFrom(r.rpg).Where(r.rpg.RoleID.Eq(roleID)))
+func (r *rolePermissionGroupRepo) DeleteByRoleID(ctx context.Context, roleID string) error {
+	_, err := dbx.Exec(ctx, r.session, dbx.DeleteFrom(r.rpg).Where(r.rpg.RoleID.Eq(roleID)))
 	return err
 }
 

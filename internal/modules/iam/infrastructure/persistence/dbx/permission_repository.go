@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
 	"github.com/samber/lo"
@@ -32,7 +33,7 @@ type permissionRepo struct {
 	permRepo *repository.Base[permissionRow, permissionSchema]
 }
 
-func NewPermissionRepository(db *dbx.DB) PermissionRepository {
+func NewPermissionRepository(db *dbx.DB) persistence.PermissionRepository {
 	ps := dbx.MustSchema("app_permissions", permissionSchema{})
 	return &permissionRepo{
 		ps:       ps,
@@ -40,38 +41,38 @@ func NewPermissionRepository(db *dbx.DB) PermissionRepository {
 	}
 }
 
-func (r *permissionRepo) ListPermissions(ctx context.Context) ([]Permission, error) {
+func (r *permissionRepo) ListPermissions(ctx context.Context) ([]persistence.Permission, error) {
 	rows, err := r.permRepo.ListSpec(ctx, repository.OrderBy(r.ps.ID.Asc()))
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row permissionRow, _ int) Permission {
-		return Permission{ID: row.ID, Name: row.Name, Code: row.Code, GroupID: row.GroupID, CreatedAt: row.CreatedAt}
+	return lo.Map(rows, func(row permissionRow, _ int) persistence.Permission {
+		return persistence.Permission{ID: row.ID, Name: row.Name, Code: row.Code, GroupID: row.GroupID, CreatedAt: row.CreatedAt}
 	}), nil
 }
 
-func (r *permissionRepo) GetPermission(ctx context.Context, id string) (Permission, bool, error) {
+func (r *permissionRepo) GetPermission(ctx context.Context, id string) (persistence.Permission, bool, error) {
 	row, err := r.permRepo.FirstSpec(ctx, repository.Where(r.ps.ID.Eq(id)))
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return Permission{}, false, nil
+			return persistence.Permission{}, false, nil
 		}
-		return Permission{}, false, err
+		return persistence.Permission{}, false, err
 	}
-	return Permission{ID: row.ID, Name: row.Name, Code: row.Code, GroupID: row.GroupID, CreatedAt: row.CreatedAt}, true, nil
+	return persistence.Permission{ID: row.ID, Name: row.Name, Code: row.Code, GroupID: row.GroupID, CreatedAt: row.CreatedAt}, true, nil
 }
 
-func (r *permissionRepo) CreatePermission(ctx context.Context, in CreatePermissionInput) (Permission, error) {
+func (r *permissionRepo) CreatePermission(ctx context.Context, in persistence.CreatePermissionInput) (persistence.Permission, error) {
 	now := time.Now().UTC()
 	row := permissionRow{ID: in.ID, Name: in.Name, Code: in.Code, GroupID: in.GroupID, CreatedAt: now}
 	if err := r.permRepo.Create(ctx, &row); err != nil {
-		return Permission{}, err
+		return persistence.Permission{}, err
 	}
 	it, _, err := r.GetPermission(ctx, in.ID)
 	return it, err
 }
 
-func (r *permissionRepo) UpdatePermission(ctx context.Context, id string, in PatchPermissionInput) (Permission, bool, error) {
+func (r *permissionRepo) UpdatePermission(ctx context.Context, id string, in persistence.PatchPermissionInput) (persistence.Permission, bool, error) {
 	assignments := []dbx.Assignment{}
 	if in.Name != nil {
 		assignments = append(assignments, r.ps.Name.Set(*in.Name))
@@ -82,11 +83,11 @@ func (r *permissionRepo) UpdatePermission(ctx context.Context, id string, in Pat
 	assignments = append(assignments, r.ps.GroupID.Set(in.GroupID))
 	res, err := r.permRepo.UpdateByID(ctx, id, assignments...)
 	if err != nil {
-		return Permission{}, false, err
+		return persistence.Permission{}, false, err
 	}
 	ra, _ := res.RowsAffected()
 	if ra == 0 {
-		return Permission{}, false, nil
+		return persistence.Permission{}, false, nil
 	}
 	it, _, err := r.GetPermission(ctx, id)
 	return it, true, err

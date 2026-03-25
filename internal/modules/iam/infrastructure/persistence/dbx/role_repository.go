@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
 	"github.com/DaiYuANg/arcgo/dbx"
 )
 
@@ -34,55 +35,57 @@ type rolePermissionGroupSchema struct {
 }
 
 type roleRepo struct {
+	session  dbx.Session
 	rs       roleSchema
 	mapper   dbx.Mapper[roleRow]
 }
 
-func NewRoleRepository(db *dbx.DB) RoleRepository {
+func NewRoleRepository(session dbx.Session) persistence.RoleRepository {
 	rs := dbx.MustSchema("app_roles", roleSchema{})
 	return &roleRepo{
+		session: session,
 		rs:     rs,
 		mapper: dbx.MustMapper[roleRow](rs),
 	}
 }
 
-func (r *roleRepo) ListRoles(ctx context.Context, session dbx.Session) ([]RoleRecord, error) {
-	rows, err := dbx.QueryAll[roleRow](ctx, session, dbx.Select(r.rs.AllColumns()...).From(r.rs).OrderBy(r.rs.ID.Asc()), r.mapper)
+func (r *roleRepo) ListRoles(ctx context.Context) ([]persistence.RoleRecord, error) {
+	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns()...).From(r.rs).OrderBy(r.rs.ID.Asc()), r.mapper)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]RoleRecord, len(rows))
+	out := make([]persistence.RoleRecord, len(rows))
 	for i, row := range rows {
-		out[i] = RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}
+		out[i] = persistence.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}
 	}
 	return out, nil
 }
 
-func (r *roleRepo) GetRole(ctx context.Context, session dbx.Session, id string) (RoleRecord, bool, error) {
-	rows, err := dbx.QueryAll[roleRow](ctx, session, dbx.Select(r.rs.AllColumns()...).From(r.rs).Where(r.rs.ID.Eq(id)), r.mapper)
+func (r *roleRepo) GetRole(ctx context.Context, id string) (persistence.RoleRecord, bool, error) {
+	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns()...).From(r.rs).Where(r.rs.ID.Eq(id)), r.mapper)
 	if err != nil {
-		return RoleRecord{}, false, err
+		return persistence.RoleRecord{}, false, err
 	}
 	if len(rows) == 0 {
-		return RoleRecord{}, false, nil
+		return persistence.RoleRecord{}, false, nil
 	}
 	row := rows[0]
-	return RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, true, nil
+	return persistence.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, true, nil
 }
 
-func (r *roleRepo) CreateRole(ctx context.Context, session dbx.Session, in CreateRoleInput) (RoleRecord, error) {
+func (r *roleRepo) CreateRole(ctx context.Context, in persistence.CreateRoleInput) (persistence.RoleRecord, error) {
 	now := time.Now().UTC()
 	row := roleRow{ID: in.ID, Name: in.Name, Description: in.Description, CreatedAt: now}
-	_, err := dbx.Exec(ctx, session, dbx.InsertInto(r.rs).
+	_, err := dbx.Exec(ctx, r.session, dbx.InsertInto(r.rs).
 		Columns(r.rs.ID, r.rs.Name, r.rs.Description, r.rs.CreatedAt).
 		Values(r.rs.ID.Set(row.ID), r.rs.Name.Set(row.Name), r.rs.Description.Set(row.Description), r.rs.CreatedAt.Set(row.CreatedAt)))
 	if err != nil {
-		return RoleRecord{}, err
+		return persistence.RoleRecord{}, err
 	}
-	return RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, nil
+	return persistence.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, nil
 }
 
-func (r *roleRepo) UpdateRole(ctx context.Context, session dbx.Session, id string, in PatchRoleInput) (RoleRecord, bool, error) {
+func (r *roleRepo) UpdateRole(ctx context.Context, id string, in persistence.PatchRoleInput) (persistence.RoleRecord, bool, error) {
 	assignments := []dbx.Assignment{}
 	if in.Name != nil {
 		assignments = append(assignments, r.rs.Name.Set(*in.Name))
@@ -91,29 +94,29 @@ func (r *roleRepo) UpdateRole(ctx context.Context, session dbx.Session, id strin
 		assignments = append(assignments, r.rs.Description.Set(*in.Description))
 	}
 	if len(assignments) == 0 {
-		it, ok, err := r.GetRole(ctx, session, id)
+		it, ok, err := r.GetRole(ctx, id)
 		return it, ok, err
 	}
-	res, err := dbx.Exec(ctx, session, dbx.Update(r.rs).Set(assignments...).Where(r.rs.ID.Eq(id)))
+	res, err := dbx.Exec(ctx, r.session, dbx.Update(r.rs).Set(assignments...).Where(r.rs.ID.Eq(id)))
 	if err != nil {
-		return RoleRecord{}, false, err
+		return persistence.RoleRecord{}, false, err
 	}
 	ra, _ := res.RowsAffected()
 	if ra == 0 {
-		return RoleRecord{}, false, nil
+		return persistence.RoleRecord{}, false, nil
 	}
-	it, ok, err := r.GetRole(ctx, session, id)
+	it, ok, err := r.GetRole(ctx, id)
 	if err != nil {
-		return RoleRecord{}, false, err
+		return persistence.RoleRecord{}, false, err
 	}
 	if !ok {
-		return RoleRecord{}, false, nil
+		return persistence.RoleRecord{}, false, nil
 	}
 	return it, true, nil
 }
 
-func (r *roleRepo) DeleteRole(ctx context.Context, session dbx.Session, id string) (bool, error) {
-	res, err := dbx.Exec(ctx, session, dbx.DeleteFrom(r.rs).Where(r.rs.ID.Eq(id)))
+func (r *roleRepo) DeleteRole(ctx context.Context, id string) (bool, error) {
+	res, err := dbx.Exec(ctx, r.session, dbx.DeleteFrom(r.rs).Where(r.rs.ID.Eq(id)))
 	if err != nil {
 		return false, err
 	}
