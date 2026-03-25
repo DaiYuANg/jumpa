@@ -62,6 +62,8 @@ type permissionGroupDTO struct {
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
+func ok[T any](data T) Result[T] { return Result[T]{Success: true, Data: data} }
+
 type ListResourceInput struct {
 	PageRequest
 	Q         string `query:"q" validate:"omitempty,max=200"`
