@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/event"
 	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
+	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/eventx"
 )
 
@@ -59,43 +61,140 @@ func (s *userAppService) Delete(ctx context.Context, id int64) (bool, error) {
 	return s.repo.Delete(ctx, id)
 }
 
-type roleAppService struct{ repo persistence.RoleRepository }
+type roleAppService struct {
+	db      *dbx.DB
+	repo    persistence.RoleRepository
+	rpgRepo persistence.RolePermissionGroupRepository
+}
 
-func NewRoleService(r persistence.RoleRepository) RoleService { return &roleAppService{repo: r} }
+func NewRoleService(db *dbx.DB, r persistence.RoleRepository, rpg persistence.RolePermissionGroupRepository) RoleService {
+	return &roleAppService{db: db, repo: r, rpgRepo: rpg}
+}
 
 func (s *roleAppService) ListRoles(ctx context.Context) ([]iamdomain.Role, error) {
-	items, err := s.repo.ListRoles(ctx)
+	items, err := s.repo.ListRoles(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
+	roleIDs := make([]string, len(items))
+	for i, it := range items {
+		roleIDs[i] = it.ID
+	}
+	pairs, err := s.rpgRepo.ListPairsByRoleIDs(ctx, s.db, roleIDs)
+	if err != nil {
+		return nil, err
+	}
+	groupIDsByRole := map[string][]string{}
+	for _, p := range pairs {
+		groupIDsByRole[p.RoleID] = append(groupIDsByRole[p.RoleID], p.PermissionGroupID)
+	}
 	out := make([]iamdomain.Role, len(items))
 	for i, it := range items {
-		out[i] = toDomainRole(it)
+		out[i] = iamdomain.Role{
+			ID:                 it.ID,
+			Name:               it.Name,
+			Description:        it.Description,
+			PermissionGroupIDs: groupIDsByRole[it.ID],
+			CreatedAt:          it.CreatedAt,
+		}
 	}
 	return out, nil
 }
 
 func (s *roleAppService) GetRole(ctx context.Context, id string) (iamdomain.Role, bool, error) {
-	it, ok, err := s.repo.GetRole(ctx, id)
-	return toDomainRole(it), ok, err
+	it, ok, err := s.repo.GetRole(ctx, s.db, id)
+	if err != nil || !ok {
+		return iamdomain.Role{}, ok, err
+	}
+	groupIDs, err := s.rpgRepo.ListPermissionGroupIDsByRoleID(ctx, s.db, id)
+	if err != nil {
+		return iamdomain.Role{}, false, err
+	}
+	return iamdomain.Role{
+		ID:                 it.ID,
+		Name:               it.Name,
+		Description:        it.Description,
+		PermissionGroupIDs: groupIDs,
+		CreatedAt:          it.CreatedAt,
+	}, true, nil
 }
 func (s *roleAppService) CreateRole(ctx context.Context, name, description string, permissionGroupIDs []string) (iamdomain.Role, error) {
-	it, err := s.repo.CreateRole(ctx, persistence.CreateRoleInput{
-		ID:                 makeID("role"),
-		Name:               name,
-		Description:        description,
-		PermissionGroupIDs: permissionGroupIDs,
+	id := makeID("role")
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return iamdomain.Role{}, err
+	}
+	committed := false
+	defer func() { if !committed { _ = tx.Rollback() } }()
+
+	it, err := s.repo.CreateRole(ctx, tx, persistence.CreateRoleInput{
+		ID:          id,
+		Name:        name,
+		Description: description,
 	})
 	if err != nil {
 		return iamdomain.Role{}, err
 	}
-	return toDomainRole(it), nil
+	if err := s.rpgRepo.ReplacePermissionGroupIDs(ctx, tx, id, permissionGroupIDs); err != nil {
+		return iamdomain.Role{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return iamdomain.Role{}, err
+	}
+	committed = true
+	return iamdomain.Role{ID: it.ID, Name: it.Name, Description: it.Description, PermissionGroupIDs: permissionGroupIDs, CreatedAt: it.CreatedAt}, nil
 }
 func (s *roleAppService) UpdateRole(ctx context.Context, id string, name, description *string, permissionGroupIDs []string) (iamdomain.Role, bool, error) {
-	it, ok, err := s.repo.UpdateRole(ctx, id, persistence.PatchRoleInput{Name: name, Description: description, PermissionGroupIDs: permissionGroupIDs})
-	return toDomainRole(it), ok, err
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return iamdomain.Role{}, false, err
+	}
+	committed := false
+	defer func() { if !committed { _ = tx.Rollback() } }()
+
+	it, ok, err := s.repo.UpdateRole(ctx, tx, id, persistence.PatchRoleInput{Name: name, Description: description})
+	if err != nil || !ok {
+		return iamdomain.Role{}, ok, err
+	}
+	if err := s.rpgRepo.ReplacePermissionGroupIDs(ctx, tx, id, permissionGroupIDs); err != nil {
+		return iamdomain.Role{}, false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return iamdomain.Role{}, false, err
+	}
+	committed = true
+	groupIDs, err := s.rpgRepo.ListPermissionGroupIDsByRoleID(ctx, s.db, id)
+	if err != nil {
+		return iamdomain.Role{}, false, err
+	}
+	return iamdomain.Role{
+		ID:                 it.ID,
+		Name:               it.Name,
+		Description:        it.Description,
+		PermissionGroupIDs: groupIDs,
+		CreatedAt:          it.CreatedAt,
+	}, true, nil
 }
-func (s *roleAppService) DeleteRole(ctx context.Context, id string) (bool, error) { return s.repo.DeleteRole(ctx, id) }
+func (s *roleAppService) DeleteRole(ctx context.Context, id string) (bool, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return false, err
+	}
+	committed := false
+	defer func() { if !committed { _ = tx.Rollback() } }()
+	if err := s.rpgRepo.DeleteByRoleID(ctx, tx, id); err != nil {
+		return false, err
+	}
+	ok, err := s.repo.DeleteRole(ctx, tx, id)
+	if err != nil {
+		return false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	committed = true
+	return ok, nil
+}
 
 type permissionGroupAppService struct{ repo persistence.PermissionGroupRepository }
 
@@ -193,15 +292,6 @@ func (s *authPrincipalAppService) SetAuthPrincipalRoles(ctx context.Context, use
 	return s.repo.SetAuthPrincipalRoles(ctx, userID, roleIDs)
 }
 
-func toDomainRole(it persistence.Role) iamdomain.Role {
-	return iamdomain.Role{
-		ID:                 it.ID,
-		Name:               it.Name,
-		Description:        it.Description,
-		PermissionGroupIDs: it.PermissionGroupIDs,
-		CreatedAt:          it.CreatedAt,
-	}
-}
 func toDomainPermissionGroup(it persistence.PermissionGroup) iamdomain.PermissionGroup {
 	return iamdomain.PermissionGroup{ID: it.ID, Name: it.Name, Description: it.Description, CreatedAt: it.CreatedAt}
 }

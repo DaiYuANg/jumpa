@@ -11,6 +11,7 @@ import (
 	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
 	db2 "github.com/DaiYuANg/arcgo-rbac-template/internal/db"
 	"github.com/DaiYuANg/arcgo/configx"
+	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/dialect"
 	"github.com/DaiYuANg/arcgo/dbx/dialect/mysql"
 	"github.com/DaiYuANg/arcgo/dbx/dialect/postgres"
@@ -25,7 +26,7 @@ var embeddedMigrations embed.FS
 func loadConfig() (config2.AppConfig, error) {
 	var cfg config2.AppConfig
 	loader := configx.New(
-		configx.WithDefaultsFrom(config2.DefaultAppConfig()),
+		configx.WithTypedDefaults(config2.DefaultAppConfig()),
 		configx.WithDotenv(".env"),
 		configx.WithEnvPrefix("APP_"),
 	)
@@ -58,7 +59,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	db, err := db2.Open(cfg.DB.Driver, cfg.DB.DSN, db2.DefaultOpts(logger)...)
+	opts := db2.DefaultOpts(logger)
+	if cfg.DB.NodeID != 0 {
+		opts = append(opts, dbx.WithNodeID(cfg.DB.NodeID))
+	}
+	db, err := db2.Open(cfg.DB.Driver, cfg.DB.DSN, opts...)
 	if err != nil {
 		logger.Error("open database failed", slog.String("error", err.Error()))
 		os.Exit(1)

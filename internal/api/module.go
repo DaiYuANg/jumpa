@@ -25,13 +25,14 @@ var Module = dix.NewModule("api",
 			}, kvClient)
 		}),
 		dix.Provider0(func() *apiendpoints.DashboardEndpoint { return apiendpoints.NewDashboardEndpoint() }),
-		dix.Provider4(func(
+		dix.Provider5(func(
 			system *apiendpoints.SystemEndpoint,
 			auth *apiendpoints.AuthEndpoint,
 			dashboard *apiendpoints.DashboardEndpoint,
-			iamEndpoints []httpx.Endpoint,
+			user *iamhttp.UserEndpoint,
+			rbac *iamhttp.RBACEndpoint,
 		) []httpx.Endpoint {
-			return append([]httpx.Endpoint{system, auth, dashboard}, iamEndpoints...)
+			return []httpx.Endpoint{system, auth, dashboard, user, rbac}
 		}),
 	),
 )

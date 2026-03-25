@@ -14,7 +14,7 @@ var Module = dix.NewModule("config",
 		dix.Provider1(func(log *slog.Logger) AppConfig {
 			var cfg AppConfig
 			loader := configx.New(
-				configx.WithDefaultsFrom(DefaultAppConfig()),
+				configx.WithTypedDefaults(DefaultAppConfig()),
 				configx.WithDotenv(".env"),
 				configx.WithEnvPrefix("APP_"),
 			)

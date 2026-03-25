@@ -12,26 +12,26 @@ tool (
 )
 
 require (
-	github.com/DaiYuANg/arcgo/authx v0.0.1
-	github.com/DaiYuANg/arcgo/collectionx v0.0.1
-	github.com/DaiYuANg/arcgo/configx v0.0.1
-	github.com/DaiYuANg/arcgo/dbx v0.0.2
-	github.com/DaiYuANg/arcgo/dbx/migrate v0.0.1
-	github.com/DaiYuANg/arcgo/dix v0.0.1
-	github.com/DaiYuANg/arcgo/eventx v0.0.1
-	github.com/DaiYuANg/arcgo/httpx v0.0.1
-	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.0.1
-	github.com/DaiYuANg/arcgo/kvx v0.0.2
-	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.0.2
-	github.com/DaiYuANg/arcgo/logx v0.0.1
-	github.com/DaiYuANg/arcgo/pkg/randomport v0.0.1
+	github.com/DaiYuANg/arcgo/authx v0.0.2
+	github.com/DaiYuANg/arcgo/collectionx v0.0.2
+	github.com/DaiYuANg/arcgo/configx v0.0.2
+	github.com/DaiYuANg/arcgo/dbx v0.0.3
+	github.com/DaiYuANg/arcgo/dbx/migrate v0.0.2
+	github.com/DaiYuANg/arcgo/dix v0.0.2
+	github.com/DaiYuANg/arcgo/eventx v0.0.2
+	github.com/DaiYuANg/arcgo/httpx v0.0.2
+	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.0.2
+	github.com/DaiYuANg/arcgo/kvx v0.0.3
+	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.0.3
+	github.com/DaiYuANg/arcgo/logx v0.0.2
+	github.com/DaiYuANg/arcgo/pkg/randomport v0.0.2
 	github.com/danielgtaylor/huma/v2 v2.37.2
 	github.com/go-co-op/gocron/v2 v2.19.1
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/golang-jwt/jwt/v5 v5.3.1
-	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jackc/pgx/v5 v5.9.1
 	github.com/samber/lo v1.53.0
 	modernc.org/sqlite v1.47.0
 )
@@ -66,8 +66,8 @@ require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/echo v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/gin v0.0.1 // indirect
-	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.0.1 // indirect
-	github.com/DaiYuANg/arcgo/observabilityx v0.0.1 // indirect
+	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.0.2 // indirect
+	github.com/DaiYuANg/arcgo/observabilityx v0.0.2 // indirect
 	github.com/Djarvur/go-err113 v0.1.1 // indirect
 	github.com/DmitriyVTitov/size v1.5.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
@@ -236,7 +236,7 @@ require (
 	github.com/karamaru-alpha/copyloopvar v1.2.2 // indirect
 	github.com/kisielk/errcheck v1.10.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.6 // indirect
-	github.com/klauspost/compress v1.18.4 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
@@ -248,7 +248,7 @@ require (
 	github.com/knadh/koanf/providers/file v1.2.1 // indirect
 	github.com/knadh/koanf/providers/fs v1.0.0 // indirect
 	github.com/knadh/koanf/providers/rawbytes v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.3 // indirect
+	github.com/knadh/koanf/v2 v2.3.4 // indirect
 	github.com/kulti/thelper v0.7.1 // indirect
 	github.com/kunwardeep/paralleltest v1.0.15 // indirect
 	github.com/lasiar/canonicalheader v1.1.2 // indirect
@@ -291,9 +291,9 @@ require (
 	github.com/nishanths/predeclared v0.2.2 // indirect
 	github.com/nunnatsa/ginkgolinter v0.23.0 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
-	github.com/panjf2000/ants/v2 v2.11.6 // indirect
+	github.com/panjf2000/ants/v2 v2.12.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
+	github.com/pelletier/go-toml/v2 v2.3.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -323,8 +323,8 @@ require (
 	github.com/samber/hot v0.13.0 // indirect
 	github.com/samber/mo v1.16.0 // indirect
 	github.com/samber/oops v1.21.0 // indirect
-	github.com/samber/oops/loggers/zerolog v0.0.0-20260225193831-1a99714a330e // indirect
-	github.com/samber/slog-common v0.20.0 // indirect
+	github.com/samber/oops/loggers/zerolog v0.0.0-20260323031308-0102cc933be9 // indirect
+	github.com/samber/slog-common v0.21.0 // indirect
 	github.com/samber/slog-zerolog/v2 v2.9.1 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
@@ -332,6 +332,7 @@ require (
 	github.com/sashamelentyev/usestdlibvars v1.29.0 // indirect
 	github.com/schollz/progressbar/v3 v3.19.0 // indirect
 	github.com/securego/gosec/v2 v2.24.8-0.20260309165252-619ce2117e08 // indirect
+	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/sivchari/containedctx v1.0.3 // indirect

@@ -14,7 +14,11 @@ var Module = dix.NewModule("db",
 	dix.WithModuleImports(config2.Module),
 	dix.WithModuleProviders(
 		dix.Provider2(func(cfg config2.AppConfig, log *slog.Logger) *dbx.DB {
-			database, err := Open(cfg.DB.Driver, cfg.DB.DSN, DefaultOpts(log)...)
+			opts := DefaultOpts(log)
+			if cfg.DB.NodeID != 0 {
+				opts = append(opts, dbx.WithNodeID(cfg.DB.NodeID))
+			}
+			database, err := Open(cfg.DB.Driver, cfg.DB.DSN, opts...)
 			if err != nil {
 				panic(err)
 			}

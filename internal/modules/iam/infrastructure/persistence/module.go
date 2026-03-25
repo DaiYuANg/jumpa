@@ -15,6 +15,9 @@ var Module = dix.NewModule("iam-persistence",
 			return dbxrepo.NewUserRepository(database, s)
 		}),
 		dix.Provider1(func(database *dbx.DB) RoleRepository { return dbxrepo.NewRoleRepository(database) }),
+		dix.Provider1(func(database *dbx.DB) RolePermissionGroupRepository {
+			return dbxrepo.NewRolePermissionGroupRepository(database)
+		}),
 		dix.Provider1(func(database *dbx.DB) PermissionGroupRepository { return dbxrepo.NewPermissionGroupRepository(database) }),
 		dix.Provider1(func(database *dbx.DB) PermissionRepository { return dbxrepo.NewPermissionRepository(database) }),
 		dix.Provider1(func(database *dbx.DB) UserRoleRepository { return dbxrepo.NewUserRoleRepository(database) }),

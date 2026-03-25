@@ -7,6 +7,8 @@ type AppConfig struct {
 	DB struct {
 		Driver string `koanf:"driver"`
 		DSN    string `koanf:"dsn"`
+		// Optional; if 0, dbx resolves node id from hostname.
+		NodeID uint16 `koanf:"node_id"`
 	} `koanf:"db"`
 	Scheduler struct {
 		Enabled      bool `koanf:"enabled"`

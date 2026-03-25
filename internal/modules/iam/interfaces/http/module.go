@@ -4,7 +4,6 @@ import (
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/application"
 	"github.com/DaiYuANg/arcgo/dix"
-	"github.com/DaiYuANg/arcgo/httpx"
 )
 
 var Module = dix.NewModule("iam-http",
@@ -23,9 +22,6 @@ var Module = dix.NewModule("iam-http",
 			permSvc application.PermissionService,
 		) *RBACEndpoint {
 			return NewRBACEndpoint(roleSvc, groupSvc, permSvc)
-		}),
-		dix.Provider2(func(user *UserEndpoint, rbac *RBACEndpoint) []httpx.Endpoint {
-			return []httpx.Endpoint{user, rbac}
 		}),
 	),
 )

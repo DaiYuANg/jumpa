@@ -5,6 +5,7 @@ func DefaultAppConfig() AppConfig {
 	cfg.Server.Port = 8080
 	cfg.DB.Driver = "sqlite"
 	cfg.DB.DSN = "file:backend?mode=memory&cache=shared"
+	cfg.DB.NodeID = 0
 	cfg.Scheduler.Enabled = true
 	cfg.Scheduler.HeartbeatSec = 60
 	cfg.Scheduler.Distributed.Enabled = false

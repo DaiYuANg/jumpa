@@ -1,31 +1,70 @@
-package persistence
+package dbx
 
 import (
 	"context"
+	"time"
 
-	legacydomain "github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
-	dbxrepo "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence/dbx"
 	"github.com/DaiYuANg/arcgo/dbx"
 )
 
-type UserRepository interface {
-	List(ctx context.Context, search string, limit, offset int) ([]legacydomain.User, int, error)
-	GetByID(ctx context.Context, id int64) (legacydomain.User, bool, error)
-	Create(ctx context.Context, in legacydomain.CreateUserInput) (legacydomain.User, error)
-	Update(ctx context.Context, id int64, in legacydomain.UpdateUserInput) (legacydomain.User, bool, error)
-	Delete(ctx context.Context, id int64) (bool, error)
+type Role struct {
+	ID                 string
+	Name               string
+	Description        string
+	PermissionGroupIDs []string
+	CreatedAt          time.Time
 }
 
-type Role = dbxrepo.Role
-type RoleRecord = dbxrepo.RoleRecord
-type PermissionGroup = dbxrepo.PermissionGroup
-type Permission = dbxrepo.Permission
-type CreateRoleInput = dbxrepo.CreateRoleInput
-type PatchRoleInput = dbxrepo.PatchRoleInput
-type CreatePermissionGroupInput = dbxrepo.CreatePermissionGroupInput
-type PatchPermissionGroupInput = dbxrepo.PatchPermissionGroupInput
-type CreatePermissionInput = dbxrepo.CreatePermissionInput
-type PatchPermissionInput = dbxrepo.PatchPermissionInput
+// RoleRecord is the roles table row mapped to domain-relevant fields.
+// Aggregations (e.g. PermissionGroupIDs) are composed in the service layer.
+type RoleRecord struct {
+	ID          string
+	Name        string
+	Description string
+	CreatedAt   time.Time
+}
+
+type PermissionGroup struct {
+	ID          string
+	Name        string
+	Description string
+	CreatedAt   time.Time
+}
+
+type Permission struct {
+	ID        string
+	Name      string
+	Code      string
+	GroupID   *string
+	CreatedAt time.Time
+}
+
+type CreateRoleInput struct {
+	ID          string
+	Name        string
+	Description string
+}
+
+type PatchRoleInput struct {
+	Name        *string
+	Description *string
+}
+
+type CreatePermissionGroupInput struct{ ID, Name, Description string }
+type PatchPermissionGroupInput struct{ Name, Description *string }
+
+type CreatePermissionInput struct {
+	ID      string
+	Name    string
+	Code    string
+	GroupID *string
+}
+
+type PatchPermissionInput struct {
+	Name    *string
+	Code    *string
+	GroupID *string
+}
 
 type RoleRepository interface {
 	ListRoles(ctx context.Context, session dbx.Session) ([]RoleRecord, error)
@@ -35,7 +74,10 @@ type RoleRepository interface {
 	DeleteRole(ctx context.Context, session dbx.Session, id string) (bool, error)
 }
 
-type RolePermissionGroupPair = dbxrepo.RolePermissionGroupPair
+type RolePermissionGroupPair struct {
+	RoleID            string
+	PermissionGroupID string
+}
 
 type RolePermissionGroupRepository interface {
 	ListPairs(ctx context.Context, session dbx.Session) ([]RolePermissionGroupPair, error)
@@ -72,3 +114,4 @@ type AuthPrincipalRepository interface {
 	DeleteAuthPrincipal(ctx context.Context, userID int64) error
 	SetAuthPrincipalRoles(ctx context.Context, userID int64, roleIDs []string) error
 }
+
