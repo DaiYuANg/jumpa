@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/utils"
 	"github.com/samber/lo"
 )
 
@@ -13,19 +14,7 @@ func okPage[T any](items []T, total, page, pageSize int) Result[PageResult[T]] {
 	return ok(PageResult[T]{Items: items, Total: total, Page: page, PageSize: pageSize})
 }
 func parseIDsCSV(raw string) []string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return nil
-	}
-	parts := strings.Split(raw, ",")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		v := strings.TrimSpace(p)
-		if v != "" {
-			out = append(out, v)
-		}
-	}
-	return out
+	return utils.ParseCSVList(raw)
 }
 func containsFold(s, sub string) bool { return strings.Contains(strings.ToLower(s), strings.ToLower(sub)) }
 func paginate[T any](items []T, page, pageSize int) PageResult[T] {

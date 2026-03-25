@@ -8,6 +8,7 @@ import (
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/api"
 	auth2 "github.com/DaiYuANg/arcgo-rbac-template/internal/auth"
 	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/utils"
 	"github.com/DaiYuANg/arcgo/authx"
 	authhttp "github.com/DaiYuANg/arcgo/authx/http"
 	collectionset "github.com/DaiYuANg/arcgo/collectionx/set"
@@ -49,32 +50,16 @@ func DefaultAuthzPolicyConfig() AuthzPolicyConfig {
 	}
 }
 
-func parseCSVList(raw string) []string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return []string{}
-	}
-	parts := strings.Split(raw, ",")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		t := strings.TrimSpace(p)
-		if t != "" {
-			out = append(out, t)
-		}
-	}
-	return out
-}
-
 func authzPolicyFromConfig(cfg config2.AppConfig) AuthzPolicyConfig {
 	p := DefaultAuthzPolicyConfig()
 	if strings.TrimSpace(cfg.Authz.ProtectedPrefix) != "" {
 		p.ProtectedPrefix = strings.TrimSpace(cfg.Authz.ProtectedPrefix)
 	}
 	if strings.TrimSpace(cfg.Authz.PublicPathsCSV) != "" {
-		p.PublicPaths = parseCSVList(cfg.Authz.PublicPathsCSV)
+		p.PublicPaths = utils.ParseCSVList(cfg.Authz.PublicPathsCSV)
 	}
 	if strings.TrimSpace(cfg.Authz.AuthOnlyResourcesCSV) != "" {
-		p.AuthOnlyResources = parseCSVList(cfg.Authz.AuthOnlyResourcesCSV)
+		p.AuthOnlyResources = utils.ParseCSVList(cfg.Authz.AuthOnlyResourcesCSV)
 	}
 	return p
 }
