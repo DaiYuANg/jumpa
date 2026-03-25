@@ -16,6 +16,16 @@ func okPage[T any](items []T, total, page, pageSize int) Result[PageResult[T]] {
 func parseIDsCSV(raw string) []string {
 	return utils.ParseCSVList(raw)
 }
+func normalizePageRequest(page, pageSize int) (normalizedPage int, normalizedPageSize int, offset int) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	return page, pageSize, (page - 1) * pageSize
+}
+
 func containsFold(s, sub string) bool { return strings.Contains(strings.ToLower(s), strings.ToLower(sub)) }
 func paginate[T any](items []T, page, pageSize int) PageResult[T] {
 	if page <= 0 {

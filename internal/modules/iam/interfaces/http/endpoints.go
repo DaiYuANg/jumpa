@@ -64,14 +64,8 @@ func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, us
 		if input.EmailLike != "" {
 			query = input.EmailLike
 		}
-		page, pageSize := input.Page, input.PageSize
-		if page <= 0 {
-			page = 1
-		}
-		if pageSize <= 0 {
-			pageSize = 10
-		}
-		items, total, err := userSvc.List(ctx, query, pageSize, (page-1)*pageSize)
+		page, pageSize, offset := normalizePageRequest(input.Page, input.PageSize)
+		items, total, err := userSvc.List(ctx, query, pageSize, offset)
 		if err != nil {
 			return nil, err
 		}
