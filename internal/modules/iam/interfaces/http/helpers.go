@@ -32,12 +32,7 @@ func normalizePageRequest(page, pageSize int) (normalizedPage int, normalizedPag
 	return page, pageSize, (page - 1) * pageSize
 }
 func paginate[T any](items []T, page, pageSize int) PageResult[T] {
-	if page <= 0 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 10
-	}
+	page, pageSize, _ = normalizePageRequest(page, pageSize)
 	total := len(items)
 	start := (page - 1) * pageSize
 	if start >= total {
