@@ -15,6 +15,13 @@ func okPage[T any](items []T, total, page, pageSize int) Result[PageResult[T]] {
 func parseIDsCSV(raw string) []string {
 	return utils.ParseCSVList(raw)
 }
+
+func parseInt64IDsCSV(raw string) []int64 {
+	return lo.FilterMap(parseIDsCSV(raw), func(idStr string, _ int) (int64, bool) {
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		return id, err == nil
+	})
+}
 func normalizePageRequest(page, pageSize int) (normalizedPage int, normalizedPageSize int, offset int) {
 	if page <= 0 {
 		page = 1

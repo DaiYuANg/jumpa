@@ -39,8 +39,8 @@ func (e *RBACEndpoint) RegisterRoutes(server httpx.ServerRuntime) { registerRBAC
 func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, userRoleSvc application.UserRoleService, principalSvc application.AuthPrincipalService) {
 	httpx.MustGroupGet(api, "/users", func(ctx context.Context, input *ListResourceInput) (*dynamicOutput, error) { // truncated behavior parity
 		if ids := parseIDsCSV(input.ID); len(ids) > 0 {
-			res := make([]userDTO, 0, len(ids))
-			validIDs := lo.FilterMap(ids, func(idStr string, _ int) (int64, bool) { id, err := strconv.ParseInt(idStr, 10, 64); return id, err == nil })
+			validIDs := parseInt64IDsCSV(input.ID)
+			res := make([]userDTO, 0, len(validIDs))
 			for _, id := range validIDs {
 				u, found, err := userSvc.Get(ctx, id)
 				if err != nil {
@@ -126,7 +126,7 @@ func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, us
 		return &dynamicOutput{Body: ok(map[string]bool{"deleted": true})}, nil
 	}, huma.OperationTags("users"))
 	httpx.MustGroupDelete(api, "/users", func(ctx context.Context, input *DeleteManyInput) (*dynamicOutput, error) {
-		validIDs := lo.FilterMap(parseIDsCSV(input.ID), func(idStr string, _ int) (int64, bool) { id, err := strconv.ParseInt(idStr, 10, 64); return id, err == nil })
+		validIDs := parseInt64IDsCSV(input.ID)
 		for _, id := range validIDs { _, _ = userSvc.Delete(ctx, id); _ = userRoleSvc.DeleteUserRoles(ctx, id); _ = principalSvc.DeleteAuthPrincipal(ctx, id) }
 		return &dynamicOutput{Body: ok([]userDTO{})}, nil
 	}, huma.OperationTags("users"))
