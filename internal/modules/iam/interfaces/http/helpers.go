@@ -2,7 +2,6 @@ package http
 
 import (
 	"strconv"
-	"strings"
 
 	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/utils"
@@ -25,8 +24,6 @@ func normalizePageRequest(page, pageSize int) (normalizedPage int, normalizedPag
 	}
 	return page, pageSize, (page - 1) * pageSize
 }
-
-func containsFold(s, sub string) bool { return strings.Contains(strings.ToLower(s), strings.ToLower(sub)) }
 func paginate[T any](items []T, page, pageSize int) PageResult[T] {
 	if page <= 0 {
 		page = 1
