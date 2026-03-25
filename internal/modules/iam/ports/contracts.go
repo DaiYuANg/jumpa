@@ -1,18 +1,19 @@
-package persistence
+package ports
 
 import (
 	"context"
 	"database/sql"
 	"time"
 
-	iamdomaind "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
+	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
+	"github.com/samber/mo"
 )
 
 type UserRepository interface {
-	List(ctx context.Context, search string, limit, offset int) ([]iamdomaind.User, int, error)
-	GetByID(ctx context.Context, id int64) (iamdomaind.User, bool, error)
-	Create(ctx context.Context, in iamdomaind.CreateUserInput) (iamdomaind.User, error)
-	Update(ctx context.Context, id int64, in iamdomaind.UpdateUserInput) (iamdomaind.User, bool, error)
+	List(ctx context.Context, search string, limit, offset int) ([]iamdomain.User, int, error)
+	GetByID(ctx context.Context, id int64) (mo.Option[iamdomain.User], error)
+	Create(ctx context.Context, in iamdomain.CreateUserInput) (iamdomain.User, error)
+	Update(ctx context.Context, id int64, in iamdomain.UpdateUserInput) (mo.Option[iamdomain.User], error)
 	Delete(ctx context.Context, id int64) (bool, error)
 }
 
@@ -67,9 +68,9 @@ type PatchPermissionInput struct {
 
 type RoleRepository interface {
 	ListRoles(ctx context.Context) ([]RoleRecord, error)
-	GetRole(ctx context.Context, id string) (RoleRecord, bool, error)
+	GetRole(ctx context.Context, id string) (mo.Option[RoleRecord], error)
 	CreateRole(ctx context.Context, in CreateRoleInput) (RoleRecord, error)
-	UpdateRole(ctx context.Context, id string, in PatchRoleInput) (RoleRecord, bool, error)
+	UpdateRole(ctx context.Context, id string, in PatchRoleInput) (mo.Option[RoleRecord], error)
 	DeleteRole(ctx context.Context, id string) (bool, error)
 }
 
@@ -97,17 +98,17 @@ type UnitOfWorkTx interface {
 
 type PermissionGroupRepository interface {
 	ListPermissionGroups(ctx context.Context) ([]PermissionGroup, error)
-	GetPermissionGroup(ctx context.Context, id string) (PermissionGroup, bool, error)
+	GetPermissionGroup(ctx context.Context, id string) (mo.Option[PermissionGroup], error)
 	CreatePermissionGroup(ctx context.Context, in CreatePermissionGroupInput) (PermissionGroup, error)
-	UpdatePermissionGroup(ctx context.Context, id string, in PatchPermissionGroupInput) (PermissionGroup, bool, error)
+	UpdatePermissionGroup(ctx context.Context, id string, in PatchPermissionGroupInput) (mo.Option[PermissionGroup], error)
 	DeletePermissionGroup(ctx context.Context, id string) (bool, error)
 }
 
 type PermissionRepository interface {
 	ListPermissions(ctx context.Context) ([]Permission, error)
-	GetPermission(ctx context.Context, id string) (Permission, bool, error)
+	GetPermission(ctx context.Context, id string) (mo.Option[Permission], error)
 	CreatePermission(ctx context.Context, in CreatePermissionInput) (Permission, error)
-	UpdatePermission(ctx context.Context, id string, in PatchPermissionInput) (Permission, bool, error)
+	UpdatePermission(ctx context.Context, id string, in PatchPermissionInput) (mo.Option[Permission], error)
 	DeletePermission(ctx context.Context, id string) (bool, error)
 }
 
@@ -122,3 +123,4 @@ type AuthPrincipalRepository interface {
 	DeleteAuthPrincipal(ctx context.Context, userID int64) error
 	SetAuthPrincipalRoles(ctx context.Context, userID int64, roleIDs []string) error
 }
+

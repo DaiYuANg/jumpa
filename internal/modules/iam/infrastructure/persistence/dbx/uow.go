@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/dbx"
 )
 
@@ -14,15 +14,15 @@ type unitOfWork struct {
 
 type uowTx struct {
 	tx   *dbx.Tx
-	role persistence.RoleRepository
-	rpg  persistence.RolePermissionGroupRepository
+	role ports.RoleRepository
+	rpg  ports.RolePermissionGroupRepository
 }
 
-func NewUnitOfWork(db *dbx.DB) persistence.UnitOfWork {
+func NewUnitOfWork(db *dbx.DB) ports.UnitOfWork {
 	return &unitOfWork{db: db}
 }
 
-func (u *unitOfWork) InTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx context.Context, tx persistence.UnitOfWorkTx) error) error {
+func (u *unitOfWork) InTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx context.Context, tx ports.UnitOfWorkTx) error) error {
 	if u == nil || u.db == nil {
 		return dbx.ErrNilDB
 	}
@@ -51,6 +51,6 @@ func (u *unitOfWork) InTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx 
 	return nil
 }
 
-func (t *uowTx) Roles() persistence.RoleRepository { return t.role }
-func (t *uowTx) RolePermissionGroups() persistence.RolePermissionGroupRepository { return t.rpg }
+func (t *uowTx) Roles() ports.RoleRepository { return t.role }
+func (t *uowTx) RolePermissionGroups() ports.RolePermissionGroupRepository { return t.rpg }
 

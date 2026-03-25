@@ -3,7 +3,7 @@ package dbx
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/samber/lo"
 )
@@ -14,7 +14,7 @@ type rolePermissionGroupRepo struct {
 	mapper dbx.Mapper[rolePermissionGroupRow]
 }
 
-func NewRolePermissionGroupRepository(session dbx.Session) persistence.RolePermissionGroupRepository {
+func NewRolePermissionGroupRepository(session dbx.Session) ports.RolePermissionGroupRepository {
 	rpg := dbx.MustSchema("app_role_permission_groups", rolePermissionGroupSchema{})
 	return &rolePermissionGroupRepo{
 		session: session,
@@ -23,20 +23,20 @@ func NewRolePermissionGroupRepository(session dbx.Session) persistence.RolePermi
 	}
 }
 
-func (r *rolePermissionGroupRepo) ListPairs(ctx context.Context) ([]persistence.RolePermissionGroupPair, error) {
+func (r *rolePermissionGroupRepo) ListPairs(ctx context.Context) ([]ports.RolePermissionGroupPair, error) {
 	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, r.session, dbx.Select(r.rpg.AllColumns()...).From(r.rpg), r.mapper)
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) persistence.RolePermissionGroupPair {
-		return persistence.RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
+	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) ports.RolePermissionGroupPair {
+		return ports.RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
 	}), nil
 }
 
-func (r *rolePermissionGroupRepo) ListPairsByRoleIDs(ctx context.Context, roleIDs []string) ([]persistence.RolePermissionGroupPair, error) {
+func (r *rolePermissionGroupRepo) ListPairsByRoleIDs(ctx context.Context, roleIDs []string) ([]ports.RolePermissionGroupPair, error) {
 	ids := normalizeIDs(roleIDs)
 	if len(ids) == 0 {
-		return []persistence.RolePermissionGroupPair{}, nil
+		return []ports.RolePermissionGroupPair{}, nil
 	}
 	rows, err := dbx.QueryAll[rolePermissionGroupRow](
 		ctx,
@@ -47,8 +47,8 @@ func (r *rolePermissionGroupRepo) ListPairsByRoleIDs(ctx context.Context, roleID
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) persistence.RolePermissionGroupPair {
-		return persistence.RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
+	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) ports.RolePermissionGroupPair {
+		return ports.RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
 	}), nil
 }
 

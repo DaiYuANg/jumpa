@@ -4,8 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/dbx"
+	"github.com/samber/lo"
+	"github.com/samber/mo"
 )
 
 type roleRow struct {
@@ -40,7 +42,7 @@ type roleRepo struct {
 	mapper   dbx.Mapper[roleRow]
 }
 
-func NewRoleRepository(session dbx.Session) persistence.RoleRepository {
+func NewRoleRepository(session dbx.Session) ports.RoleRepository {
 	rs := dbx.MustSchema("app_roles", roleSchema{})
 	return &roleRepo{
 		session: session,
@@ -49,43 +51,41 @@ func NewRoleRepository(session dbx.Session) persistence.RoleRepository {
 	}
 }
 
-func (r *roleRepo) ListRoles(ctx context.Context) ([]persistence.RoleRecord, error) {
+func (r *roleRepo) ListRoles(ctx context.Context) ([]ports.RoleRecord, error) {
 	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns()...).From(r.rs).OrderBy(r.rs.ID.Asc()), r.mapper)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]persistence.RoleRecord, len(rows))
-	for i, row := range rows {
-		out[i] = persistence.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}
-	}
-	return out, nil
+	return lo.Map(rows, func(row roleRow, _ int) ports.RoleRecord {
+		return ports.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}
+	}), nil
 }
 
-func (r *roleRepo) GetRole(ctx context.Context, id string) (persistence.RoleRecord, bool, error) {
+func (r *roleRepo) GetRole(ctx context.Context, id string) (mo.Option[ports.RoleRecord], error) {
 	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns()...).From(r.rs).Where(r.rs.ID.Eq(id)), r.mapper)
 	if err != nil {
-		return persistence.RoleRecord{}, false, err
+		return mo.None[ports.RoleRecord](), err
 	}
 	if len(rows) == 0 {
-		return persistence.RoleRecord{}, false, nil
+		return mo.None[ports.RoleRecord](), nil
 	}
 	row := rows[0]
-	return persistence.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, true, nil
+	return mo.Some(ports.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}), nil
 }
 
-func (r *roleRepo) CreateRole(ctx context.Context, in persistence.CreateRoleInput) (persistence.RoleRecord, error) {
+func (r *roleRepo) CreateRole(ctx context.Context, in ports.CreateRoleInput) (ports.RoleRecord, error) {
 	now := time.Now().UTC()
 	row := roleRow{ID: in.ID, Name: in.Name, Description: in.Description, CreatedAt: now}
 	_, err := dbx.Exec(ctx, r.session, dbx.InsertInto(r.rs).
 		Columns(r.rs.ID, r.rs.Name, r.rs.Description, r.rs.CreatedAt).
 		Values(r.rs.ID.Set(row.ID), r.rs.Name.Set(row.Name), r.rs.Description.Set(row.Description), r.rs.CreatedAt.Set(row.CreatedAt)))
 	if err != nil {
-		return persistence.RoleRecord{}, err
+		return ports.RoleRecord{}, err
 	}
-	return persistence.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, nil
+	return ports.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}, nil
 }
 
-func (r *roleRepo) UpdateRole(ctx context.Context, id string, in persistence.PatchRoleInput) (persistence.RoleRecord, bool, error) {
+func (r *roleRepo) UpdateRole(ctx context.Context, id string, in ports.PatchRoleInput) (mo.Option[ports.RoleRecord], error) {
 	assignments := []dbx.Assignment{}
 	if in.Name != nil {
 		assignments = append(assignments, r.rs.Name.Set(*in.Name))
@@ -94,25 +94,17 @@ func (r *roleRepo) UpdateRole(ctx context.Context, id string, in persistence.Pat
 		assignments = append(assignments, r.rs.Description.Set(*in.Description))
 	}
 	if len(assignments) == 0 {
-		it, ok, err := r.GetRole(ctx, id)
-		return it, ok, err
+		return r.GetRole(ctx, id)
 	}
 	res, err := dbx.Exec(ctx, r.session, dbx.Update(r.rs).Set(assignments...).Where(r.rs.ID.Eq(id)))
 	if err != nil {
-		return persistence.RoleRecord{}, false, err
+		return mo.None[ports.RoleRecord](), err
 	}
 	ra, _ := res.RowsAffected()
 	if ra == 0 {
-		return persistence.RoleRecord{}, false, nil
+		return mo.None[ports.RoleRecord](), nil
 	}
-	it, ok, err := r.GetRole(ctx, id)
-	if err != nil {
-		return persistence.RoleRecord{}, false, err
-	}
-	if !ok {
-		return persistence.RoleRecord{}, false, nil
-	}
-	return it, true, nil
+	return r.GetRole(ctx, id)
 }
 
 func (r *roleRepo) DeleteRole(ctx context.Context, id string) (bool, error) {

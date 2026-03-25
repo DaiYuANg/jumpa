@@ -7,17 +7,19 @@ import (
 
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/event"
 	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/eventx"
+	"github.com/samber/lo"
+	"github.com/samber/mo"
 )
 
 type userAppService struct {
-	repo persistence.UserRepository
+	repo ports.UserRepository
 	bus  eventx.BusRuntime
 	log  *slog.Logger
 }
 
-func NewUserService(repo persistence.UserRepository, bus eventx.BusRuntime, log *slog.Logger) UserService {
+func NewUserService(repo ports.UserRepository, bus eventx.BusRuntime, log *slog.Logger) UserService {
 	return &userAppService{repo: repo, bus: bus, log: log}
 }
 
@@ -29,9 +31,8 @@ func (s *userAppService) List(ctx context.Context, search string, limit, offset 
 	return items, total, nil
 }
 
-func (s *userAppService) Get(ctx context.Context, id int64) (iamdomain.User, bool, error) {
-	it, ok, err := s.repo.GetByID(ctx, id)
-	return it, ok, err
+func (s *userAppService) Get(ctx context.Context, id int64) (mo.Option[iamdomain.User], error) {
+	return s.repo.GetByID(ctx, id)
 }
 
 func (s *userAppService) Create(ctx context.Context, in iamdomain.CreateUserInput) (iamdomain.User, error) {
@@ -45,7 +46,7 @@ func (s *userAppService) Create(ctx context.Context, in iamdomain.CreateUserInpu
 	return user, nil
 }
 
-func (s *userAppService) Update(ctx context.Context, id int64, in iamdomain.UpdateUserInput) (iamdomain.User, bool, error) {
+func (s *userAppService) Update(ctx context.Context, id int64, in iamdomain.UpdateUserInput) (mo.Option[iamdomain.User], error) {
 	return s.repo.Update(ctx, id, in)
 }
 
@@ -54,12 +55,12 @@ func (s *userAppService) Delete(ctx context.Context, id int64) (bool, error) {
 }
 
 type roleAppService struct {
-	uow     persistence.UnitOfWork
-	repo    persistence.RoleRepository
-	rpgRepo persistence.RolePermissionGroupRepository
+	uow     ports.UnitOfWork
+	repo    ports.RoleRepository
+	rpgRepo ports.RolePermissionGroupRepository
 }
 
-func NewRoleService(uow persistence.UnitOfWork, r persistence.RoleRepository, rpg persistence.RolePermissionGroupRepository) RoleService {
+func NewRoleService(uow ports.UnitOfWork, r ports.RoleRepository, rpg ports.RolePermissionGroupRepository) RoleService {
 	return &roleAppService{uow: uow, repo: r, rpgRepo: rpg}
 }
 
@@ -68,18 +69,17 @@ func (s *roleAppService) ListRoles(ctx context.Context) ([]iamdomain.Role, error
 	if err != nil {
 		return nil, err
 	}
-	roleIDs := make([]string, len(items))
-	for i, it := range items {
-		roleIDs[i] = it.ID
-	}
+	roleIDs := lo.Map(items, func(it ports.RoleRecord, _ int) string { return it.ID })
 	pairs, err := s.rpgRepo.ListPairsByRoleIDs(ctx, roleIDs)
 	if err != nil {
 		return nil, err
 	}
-	groupIDsByRole := map[string][]string{}
-	for _, p := range pairs {
-		groupIDsByRole[p.RoleID] = append(groupIDsByRole[p.RoleID], p.PermissionGroupID)
-	}
+	groupIDsByRole := lo.MapValues(
+		lo.GroupBy(pairs, func(p ports.RolePermissionGroupPair) string { return p.RoleID }),
+		func(ps []ports.RolePermissionGroupPair, _ string) []string {
+			return lo.Map(ps, func(p ports.RolePermissionGroupPair, _ int) string { return p.PermissionGroupID })
+		},
+	)
 	out := make([]iamdomain.Role, len(items))
 	for i, it := range items {
 		out[i] = iamdomain.Role{
@@ -93,28 +93,29 @@ func (s *roleAppService) ListRoles(ctx context.Context) ([]iamdomain.Role, error
 	return out, nil
 }
 
-func (s *roleAppService) GetRole(ctx context.Context, id string) (iamdomain.Role, bool, error) {
-	it, ok, err := s.repo.GetRole(ctx, id)
-	if err != nil || !ok {
-		return iamdomain.Role{}, ok, err
+func (s *roleAppService) GetRole(ctx context.Context, id string) (mo.Option[iamdomain.Role], error) {
+	it, err := s.repo.GetRole(ctx, id)
+	if err != nil || it.IsAbsent() {
+		return mo.None[iamdomain.Role](), err
 	}
+	role := it.MustGet()
 	groupIDs, err := s.rpgRepo.ListPermissionGroupIDsByRoleID(ctx, id)
 	if err != nil {
-		return iamdomain.Role{}, false, err
+		return mo.None[iamdomain.Role](), err
 	}
-	return iamdomain.Role{
-		ID:                 it.ID,
-		Name:               it.Name,
-		Description:        it.Description,
+	return mo.Some(iamdomain.Role{
+		ID:                 role.ID,
+		Name:               role.Name,
+		Description:        role.Description,
 		PermissionGroupIDs: groupIDs,
-		CreatedAt:          it.CreatedAt,
-	}, true, nil
+		CreatedAt:          role.CreatedAt,
+	}), nil
 }
 func (s *roleAppService) CreateRole(ctx context.Context, name, description string, permissionGroupIDs []string) (iamdomain.Role, error) {
 	id := makeID("role")
 	var out iamdomain.Role
-	err := s.uow.InTx(ctx, nil, func(ctx context.Context, tx persistence.UnitOfWorkTx) error {
-		it, err := tx.Roles().CreateRole(ctx, persistence.CreateRoleInput{ID: id, Name: name, Description: description})
+	err := s.uow.InTx(ctx, nil, func(ctx context.Context, tx ports.UnitOfWorkTx) error {
+		it, err := tx.Roles().CreateRole(ctx, ports.CreateRoleInput{ID: id, Name: name, Description: description})
 		if err != nil {
 			return err
 		}
@@ -126,18 +127,15 @@ func (s *roleAppService) CreateRole(ctx context.Context, name, description strin
 	})
 	return out, err
 }
-func (s *roleAppService) UpdateRole(ctx context.Context, id string, name, description *string, permissionGroupIDs []string) (iamdomain.Role, bool, error) {
-	var (
-		out iamdomain.Role
-		ok  bool
-	)
-	err := s.uow.InTx(ctx, nil, func(ctx context.Context, tx persistence.UnitOfWorkTx) error {
-		it, found, err := tx.Roles().UpdateRole(ctx, id, persistence.PatchRoleInput{Name: name, Description: description})
+func (s *roleAppService) UpdateRole(ctx context.Context, id string, name, description *string, permissionGroupIDs []string) (mo.Option[iamdomain.Role], error) {
+	out := mo.None[iamdomain.Role]()
+	err := s.uow.InTx(ctx, nil, func(ctx context.Context, tx ports.UnitOfWorkTx) error {
+		it, err := tx.Roles().UpdateRole(ctx, id, ports.PatchRoleInput{Name: name, Description: description})
 		if err != nil {
 			return err
 		}
-		if !found {
-			ok = false
+		if it.IsAbsent() {
+			out = mo.None[iamdomain.Role]()
 			return nil
 		}
 		if err := tx.RolePermissionGroups().ReplacePermissionGroupIDs(ctx, id, permissionGroupIDs); err != nil {
@@ -147,15 +145,15 @@ func (s *roleAppService) UpdateRole(ctx context.Context, id string, name, descri
 		if err != nil {
 			return err
 		}
-		out = iamdomain.Role{ID: it.ID, Name: it.Name, Description: it.Description, PermissionGroupIDs: groupIDs, CreatedAt: it.CreatedAt}
-		ok = true
+		role := it.MustGet()
+		out = mo.Some(iamdomain.Role{ID: role.ID, Name: role.Name, Description: role.Description, PermissionGroupIDs: groupIDs, CreatedAt: role.CreatedAt})
 		return nil
 	})
-	return out, ok, err
+	return out, err
 }
 func (s *roleAppService) DeleteRole(ctx context.Context, id string) (bool, error) {
 	var deleted bool
-	err := s.uow.InTx(ctx, nil, func(ctx context.Context, tx persistence.UnitOfWorkTx) error {
+	err := s.uow.InTx(ctx, nil, func(ctx context.Context, tx ports.UnitOfWorkTx) error {
 		if err := tx.RolePermissionGroups().DeleteByRoleID(ctx, id); err != nil {
 			return err
 		}
@@ -169,9 +167,9 @@ func (s *roleAppService) DeleteRole(ctx context.Context, id string) (bool, error
 	return deleted, err
 }
 
-type permissionGroupAppService struct{ repo persistence.PermissionGroupRepository }
+type permissionGroupAppService struct{ repo ports.PermissionGroupRepository }
 
-func NewPermissionGroupService(r persistence.PermissionGroupRepository) PermissionGroupService {
+func NewPermissionGroupService(r ports.PermissionGroupRepository) PermissionGroupService {
 	return &permissionGroupAppService{repo: r}
 }
 func (s *permissionGroupAppService) ListPermissionGroups(ctx context.Context) ([]iamdomain.PermissionGroup, error) {
@@ -185,28 +183,34 @@ func (s *permissionGroupAppService) ListPermissionGroups(ctx context.Context) ([
 	}
 	return out, nil
 }
-func (s *permissionGroupAppService) GetPermissionGroup(ctx context.Context, id string) (iamdomain.PermissionGroup, bool, error) {
-	it, ok, err := s.repo.GetPermissionGroup(ctx, id)
-	return toDomainPermissionGroup(it), ok, err
+func (s *permissionGroupAppService) GetPermissionGroup(ctx context.Context, id string) (mo.Option[iamdomain.PermissionGroup], error) {
+	it, err := s.repo.GetPermissionGroup(ctx, id)
+	if err != nil || it.IsAbsent() {
+		return mo.None[iamdomain.PermissionGroup](), err
+	}
+	return mo.Some(toDomainPermissionGroup(it.MustGet())), nil
 }
 func (s *permissionGroupAppService) CreatePermissionGroup(ctx context.Context, name, description string) (iamdomain.PermissionGroup, error) {
-	it, err := s.repo.CreatePermissionGroup(ctx, persistence.CreatePermissionGroupInput{ID: makeID("pg"), Name: name, Description: description})
+	it, err := s.repo.CreatePermissionGroup(ctx, ports.CreatePermissionGroupInput{ID: makeID("pg"), Name: name, Description: description})
 	if err != nil {
 		return iamdomain.PermissionGroup{}, err
 	}
 	return toDomainPermissionGroup(it), nil
 }
-func (s *permissionGroupAppService) UpdatePermissionGroup(ctx context.Context, id string, name, description *string) (iamdomain.PermissionGroup, bool, error) {
-	it, ok, err := s.repo.UpdatePermissionGroup(ctx, id, persistence.PatchPermissionGroupInput{Name: name, Description: description})
-	return toDomainPermissionGroup(it), ok, err
+func (s *permissionGroupAppService) UpdatePermissionGroup(ctx context.Context, id string, name, description *string) (mo.Option[iamdomain.PermissionGroup], error) {
+	it, err := s.repo.UpdatePermissionGroup(ctx, id, ports.PatchPermissionGroupInput{Name: name, Description: description})
+	if err != nil || it.IsAbsent() {
+		return mo.None[iamdomain.PermissionGroup](), err
+	}
+	return mo.Some(toDomainPermissionGroup(it.MustGet())), nil
 }
 func (s *permissionGroupAppService) DeletePermissionGroup(ctx context.Context, id string) (bool, error) {
 	return s.repo.DeletePermissionGroup(ctx, id)
 }
 
-type permissionAppService struct{ repo persistence.PermissionRepository }
+type permissionAppService struct{ repo ports.PermissionRepository }
 
-func NewPermissionService(r persistence.PermissionRepository) PermissionService { return &permissionAppService{repo: r} }
+func NewPermissionService(r ports.PermissionRepository) PermissionService { return &permissionAppService{repo: r} }
 func (s *permissionAppService) ListPermissions(ctx context.Context) ([]iamdomain.Permission, error) {
 	items, err := s.repo.ListPermissions(ctx)
 	if err != nil {
@@ -218,28 +222,34 @@ func (s *permissionAppService) ListPermissions(ctx context.Context) ([]iamdomain
 	}
 	return out, nil
 }
-func (s *permissionAppService) GetPermission(ctx context.Context, id string) (iamdomain.Permission, bool, error) {
-	it, ok, err := s.repo.GetPermission(ctx, id)
-	return toDomainPermission(it), ok, err
+func (s *permissionAppService) GetPermission(ctx context.Context, id string) (mo.Option[iamdomain.Permission], error) {
+	it, err := s.repo.GetPermission(ctx, id)
+	if err != nil || it.IsAbsent() {
+		return mo.None[iamdomain.Permission](), err
+	}
+	return mo.Some(toDomainPermission(it.MustGet())), nil
 }
 func (s *permissionAppService) CreatePermission(ctx context.Context, name, code string, groupID *string) (iamdomain.Permission, error) {
-	it, err := s.repo.CreatePermission(ctx, persistence.CreatePermissionInput{ID: makeID("perm"), Name: name, Code: code, GroupID: groupID})
+	it, err := s.repo.CreatePermission(ctx, ports.CreatePermissionInput{ID: makeID("perm"), Name: name, Code: code, GroupID: groupID})
 	if err != nil {
 		return iamdomain.Permission{}, err
 	}
 	return toDomainPermission(it), nil
 }
-func (s *permissionAppService) UpdatePermission(ctx context.Context, id string, name, code *string, groupID *string) (iamdomain.Permission, bool, error) {
-	it, ok, err := s.repo.UpdatePermission(ctx, id, persistence.PatchPermissionInput{Name: name, Code: code, GroupID: groupID})
-	return toDomainPermission(it), ok, err
+func (s *permissionAppService) UpdatePermission(ctx context.Context, id string, name, code *string, groupID *string) (mo.Option[iamdomain.Permission], error) {
+	it, err := s.repo.UpdatePermission(ctx, id, ports.PatchPermissionInput{Name: name, Code: code, GroupID: groupID})
+	if err != nil || it.IsAbsent() {
+		return mo.None[iamdomain.Permission](), err
+	}
+	return mo.Some(toDomainPermission(it.MustGet())), nil
 }
 func (s *permissionAppService) DeletePermission(ctx context.Context, id string) (bool, error) {
 	return s.repo.DeletePermission(ctx, id)
 }
 
-type userRoleAppService struct{ repo persistence.UserRoleRepository }
+type userRoleAppService struct{ repo ports.UserRoleRepository }
 
-func NewUserRoleService(r persistence.UserRoleRepository) UserRoleService { return &userRoleAppService{repo: r} }
+func NewUserRoleService(r ports.UserRoleRepository) UserRoleService { return &userRoleAppService{repo: r} }
 func (s *userRoleAppService) ListUserRoleIDs(ctx context.Context, userID int64) ([]string, error) {
 	return s.repo.ListUserRoleIDs(ctx, userID)
 }
@@ -250,9 +260,9 @@ func (s *userRoleAppService) DeleteUserRoles(ctx context.Context, userID int64) 
 	return s.repo.DeleteUserRoles(ctx, userID)
 }
 
-type authPrincipalAppService struct{ repo persistence.AuthPrincipalRepository }
+type authPrincipalAppService struct{ repo ports.AuthPrincipalRepository }
 
-func NewAuthPrincipalService(r persistence.AuthPrincipalRepository) AuthPrincipalService {
+func NewAuthPrincipalService(r ports.AuthPrincipalRepository) AuthPrincipalService {
 	return &authPrincipalAppService{repo: r}
 }
 func (s *authPrincipalAppService) UpsertAuthPrincipal(ctx context.Context, userID int64, email string) error {
@@ -265,10 +275,10 @@ func (s *authPrincipalAppService) SetAuthPrincipalRoles(ctx context.Context, use
 	return s.repo.SetAuthPrincipalRoles(ctx, userID, roleIDs)
 }
 
-func toDomainPermissionGroup(it persistence.PermissionGroup) iamdomain.PermissionGroup {
+func toDomainPermissionGroup(it ports.PermissionGroup) iamdomain.PermissionGroup {
 	return iamdomain.PermissionGroup{ID: it.ID, Name: it.Name, Description: it.Description, CreatedAt: it.CreatedAt}
 }
-func toDomainPermission(it persistence.Permission) iamdomain.Permission {
+func toDomainPermission(it ports.Permission) iamdomain.Permission {
 	return iamdomain.Permission{ID: it.ID, Name: it.Name, Code: it.Code, GroupID: it.GroupID, CreatedAt: it.CreatedAt}
 }
 

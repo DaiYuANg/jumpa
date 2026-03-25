@@ -3,7 +3,7 @@ package dbx
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
 	"github.com/samber/lo"
@@ -25,7 +25,7 @@ type userRoleRepo struct {
 	userRoleRepo *repository.Base[userRoleRow, userRoleSchema]
 }
 
-func NewUserRoleRepository(db *dbx.DB) persistence.UserRoleRepository {
+func NewUserRoleRepository(db *dbx.DB) ports.UserRoleRepository {
 	urs := dbx.MustSchema("app_user_roles", userRoleSchema{})
 	return &userRoleRepo{
 		urs:          urs,
@@ -45,10 +45,7 @@ func (r *userRoleRepo) SetUserRoleIDs(ctx context.Context, userID int64, roleIDs
 	if _, err := r.userRoleRepo.Delete(ctx, dbx.DeleteFrom(r.urs).Where(r.urs.UserID.Eq(userID))); err != nil {
 		return err
 	}
-	for _, roleID := range roleIDs {
-		if roleID == "" {
-			continue
-		}
+	for _, roleID := range normalizeIDs(roleIDs) {
 		row := userRoleRow{UserID: userID, RoleID: roleID}
 		if err := r.userRoleRepo.Create(ctx, &row); err != nil {
 			return err

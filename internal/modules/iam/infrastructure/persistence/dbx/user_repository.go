@@ -7,10 +7,12 @@ import (
 	"time"
 
 	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
+	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/schema"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	"github.com/samber/lo"
+	"github.com/samber/mo"
 )
 
 type UserRow = schema.UserRow
@@ -22,7 +24,7 @@ type userRepo struct {
 	repo   *repository.Base[UserRow, UserSchema]
 }
 
-func NewUserRepository(db *dbx.DB, s UserSchema) persistence.UserRepository {
+func NewUserRepository(db *dbx.DB, s UserSchema) ports.UserRepository {
 	return &userRepo{db: db, schema: s, repo: repository.New[UserRow](db, s)}
 }
 
@@ -47,23 +49,22 @@ func (r *userRepo) List(ctx context.Context, search string, limit, offset int) (
 	if err != nil {
 		return nil, 0, err
 	}
-	users := make([]iamdomain.User, len(rows))
-	for i, row := range rows {
-		users[i] = iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
-	}
+	users := lo.Map(rows, func(row UserRow, _ int) iamdomain.User {
+		return iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
+	})
 	return users, int(total), nil
 }
 
-func (r *userRepo) GetByID(ctx context.Context, id int64) (iamdomain.User, bool, error) {
+func (r *userRepo) GetByID(ctx context.Context, id int64) (mo.Option[iamdomain.User], error) {
 	s := r.schema
 	row, err := r.repo.FirstSpec(ctx, repository.Where(s.ID.Eq(id)))
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return iamdomain.User{}, false, nil
+			return mo.None[iamdomain.User](), nil
 		}
-		return iamdomain.User{}, false, err
+		return mo.None[iamdomain.User](), err
 	}
-	return iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}, true, nil
+	return mo.Some(iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}), nil
 }
 
 func (r *userRepo) Create(ctx context.Context, in iamdomain.CreateUserInput) (iamdomain.User, error) {
@@ -81,7 +82,7 @@ func (r *userRepo) Create(ctx context.Context, in iamdomain.CreateUserInput) (ia
 	return iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}, nil
 }
 
-func (r *userRepo) Update(ctx context.Context, id int64, in iamdomain.UpdateUserInput) (iamdomain.User, bool, error) {
+func (r *userRepo) Update(ctx context.Context, id int64, in iamdomain.UpdateUserInput) (mo.Option[iamdomain.User], error) {
 	s := r.schema
 	assignments := []dbx.Assignment{s.UpdatedAt.Set(time.Now().UTC())}
 	if in.Name != nil {
@@ -95,14 +96,13 @@ func (r *userRepo) Update(ctx context.Context, id int64, in iamdomain.UpdateUser
 	}
 	res, err := r.repo.UpdateByID(ctx, id, assignments...)
 	if err != nil {
-		return iamdomain.User{}, false, err
+		return mo.None[iamdomain.User](), err
 	}
 	ra, _ := res.RowsAffected()
 	if ra == 0 {
-		return iamdomain.User{}, false, nil
+		return mo.None[iamdomain.User](), nil
 	}
-	out, ok, err := r.GetByID(ctx, id)
-	return out, ok, err
+	return r.GetByID(ctx, id)
 }
 
 func (r *userRepo) Delete(ctx context.Context, id int64) (bool, error) {

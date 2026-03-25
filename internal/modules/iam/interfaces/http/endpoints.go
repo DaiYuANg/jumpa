@@ -12,6 +12,7 @@ import (
 	"github.com/DaiYuANg/arcgo/httpx"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/samber/lo"
+	"github.com/samber/mo"
 )
 
 type UserEndpoint struct {
@@ -36,16 +37,17 @@ func NewRBACEndpoint(roleSvc application.RoleService, groupSvc application.Permi
 func (e *UserEndpoint) RegisterRoutes(server httpx.ServerRuntime) { registerUserEndpoints(server.Group("/api"), e.userSvc, e.userRoleSvc, e.principalSvc) }
 func (e *RBACEndpoint) RegisterRoutes(server httpx.ServerRuntime) { registerRBACEndpoints(server.Group("/api"), e.roleSvc, e.groupSvc, e.permSvc) }
 
-func getUserDTOByID(ctx context.Context, userSvc application.UserService, userRoleSvc application.UserRoleService, id int64) (userDTO, bool, error) {
-	u, found, err := userSvc.Get(ctx, id)
-	if err != nil || !found {
-		return userDTO{}, found, err
+func getUserDTOByID(ctx context.Context, userSvc application.UserService, userRoleSvc application.UserRoleService, id int64) (mo.Option[userDTO], error) {
+	u, err := userSvc.Get(ctx, id)
+	if err != nil || u.IsAbsent() {
+		return mo.None[userDTO](), err
 	}
-	roleIDs, err := userRoleSvc.ListUserRoleIDs(ctx, u.ID)
+	user := u.MustGet()
+	roleIDs, err := userRoleSvc.ListUserRoleIDs(ctx, user.ID)
 	if err != nil {
-		return userDTO{}, false, err
+		return mo.None[userDTO](), err
 	}
-	return toUserDTO(u, roleIDs), true, nil
+	return mo.Some(toUserDTO(user, roleIDs)), nil
 }
 
 func getUserDTO(ctx context.Context, userRoleSvc application.UserRoleService, u iamdomain.User) (userDTO, error) {
@@ -61,12 +63,12 @@ func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, us
 		if validIDs := parseInt64IDsCSV(input.ID); len(validIDs) > 0 {
 			res := make([]userDTO, 0, len(validIDs))
 			for _, id := range validIDs {
-				dto, found, err := getUserDTOByID(ctx, userSvc, userRoleSvc, id)
+				dto, err := getUserDTOByID(ctx, userSvc, userRoleSvc, id)
 				if err != nil {
 					return nil, err
 				}
-				if found {
-					res = append(res, dto)
+				if dto.IsPresent() {
+					res = append(res, dto.MustGet())
 				}
 			}
 			return &dynamicOutput{Body: ok(res)}, nil
@@ -99,18 +101,19 @@ func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, us
 		if err != nil {
 			return nil, httpx.NewError(400, "invalid user id")
 		}
-		u, found, err := userSvc.Get(ctx, id)
+		u, err := userSvc.Get(ctx, id)
 		if err != nil {
 			return nil, err
 		}
-		if !found {
+		if u.IsAbsent() {
 			return nil, httpx.NewError(404, "user not found")
 		}
-		roleIDs, err := userRoleSvc.ListUserRoleIDs(ctx, u.ID)
+		user := u.MustGet()
+		roleIDs, err := userRoleSvc.ListUserRoleIDs(ctx, user.ID)
 		if err != nil {
 			return nil, err
 		}
-		return &dynamicOutput{Body: ok(toUserDTO(u, roleIDs))}, nil
+		return &dynamicOutput{Body: ok(toUserDTO(user, roleIDs))}, nil
 	}, huma.OperationTags("users"))
 	httpx.MustGroupPost(api, "/users", func(ctx context.Context, input *CreateUserInput) (*dynamicOutput, error) {
 		u, err := userSvc.Create(ctx, iamdomain.CreateUserInput{Name: input.Body.Name, Email: input.Body.Email, Age: input.Body.Age})
@@ -122,15 +125,16 @@ func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, us
 	}, huma.OperationTags("users"))
 	httpx.MustGroupPatch(api, "/users/{id}", func(ctx context.Context, input *PatchUserInput) (*dynamicOutput, error) {
 		id, err := strconv.ParseInt(input.ID, 10, 64); if err != nil { return nil, httpx.NewError(400, "invalid user id") }
-		u, found, err := userSvc.Update(ctx, id, iamdomain.UpdateUserInput{Name: input.Body.Name, Email: input.Body.Email, Age: input.Body.Age}); if err != nil { return nil, err }
-		if !found { return nil, httpx.NewError(404, "user not found") }
-		if err := principalSvc.UpsertAuthPrincipal(ctx, u.ID, u.Email); err != nil { return nil, err }
+		u, err := userSvc.Update(ctx, id, iamdomain.UpdateUserInput{Name: input.Body.Name, Email: input.Body.Email, Age: input.Body.Age}); if err != nil { return nil, err }
+		if u.IsAbsent() { return nil, httpx.NewError(404, "user not found") }
+		user := u.MustGet()
+		if err := principalSvc.UpsertAuthPrincipal(ctx, user.ID, user.Email); err != nil { return nil, err }
 		if input.Body.RoleIDs != nil {
 			if err := userRoleSvc.SetUserRoleIDs(ctx, id, slices.Clone(input.Body.RoleIDs)); err != nil { return nil, err }
 			if err := principalSvc.SetAuthPrincipalRoles(ctx, id, slices.Clone(input.Body.RoleIDs)); err != nil { return nil, err }
 		}
 		roleIDs, err := userRoleSvc.ListUserRoleIDs(ctx, id); if err != nil { return nil, err }
-		return &dynamicOutput{Body: ok(toUserDTO(u, roleIDs))}, nil
+		return &dynamicOutput{Body: ok(toUserDTO(user, roleIDs))}, nil
 	}, huma.OperationTags("users"))
 	httpx.MustGroupDelete(api, "/users/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) {
 		id, err := strconv.ParseInt(input.ID, 10, 64); if err != nil { return nil, httpx.NewError(400, "invalid user id") }
@@ -171,9 +175,9 @@ func registerRBACEndpoints(api *httpx.Group, roleSvc application.RoleService, gr
 		return &dynamicOutput{Body: okPage(p.Items, p.Total, p.Page, p.PageSize)}, nil
 	}, huma.OperationTags("roles"))
 	// Remaining RBAC routes follow existing behavior.
-	httpx.MustGroupGet(api, "/roles/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) { it, found, err := roleSvc.GetRole(ctx, input.ID); if err != nil { return nil, err }; if !found { return nil, httpx.NewError(404, "role not found") }; return &dynamicOutput{Body: ok(toRoleDTO(it))}, nil }, huma.OperationTags("roles"))
+	httpx.MustGroupGet(api, "/roles/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) { it, err := roleSvc.GetRole(ctx, input.ID); if err != nil { return nil, err }; if it.IsAbsent() { return nil, httpx.NewError(404, "role not found") }; return &dynamicOutput{Body: ok(toRoleDTO(it.MustGet()))}, nil }, huma.OperationTags("roles"))
 	httpx.MustGroupPost(api, "/roles", func(ctx context.Context, input *CreateRoleInput) (*dynamicOutput, error) { it, err := roleSvc.CreateRole(ctx, input.Body.Name, input.Body.Description, slices.Clone(input.Body.PermissionGroupIDs)); if err != nil { return nil, err }; return &dynamicOutput{Body: ok(toRoleDTO(it))}, nil }, huma.OperationTags("roles"))
-	httpx.MustGroupPatch(api, "/roles/{id}", func(ctx context.Context, input *PatchRoleInput) (*dynamicOutput, error) { it, found, err := roleSvc.UpdateRole(ctx, input.ID, input.Body.Name, input.Body.Description, input.Body.PermissionGroupIDs); if err != nil { return nil, err }; if !found { return nil, httpx.NewError(404, "role not found") }; return &dynamicOutput{Body: ok(toRoleDTO(it))}, nil }, huma.OperationTags("roles"))
+	httpx.MustGroupPatch(api, "/roles/{id}", func(ctx context.Context, input *PatchRoleInput) (*dynamicOutput, error) { it, err := roleSvc.UpdateRole(ctx, input.ID, input.Body.Name, input.Body.Description, input.Body.PermissionGroupIDs); if err != nil { return nil, err }; if it.IsAbsent() { return nil, httpx.NewError(404, "role not found") }; return &dynamicOutput{Body: ok(toRoleDTO(it.MustGet()))}, nil }, huma.OperationTags("roles"))
 	httpx.MustGroupDelete(api, "/roles/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) { _, err := roleSvc.DeleteRole(ctx, input.ID); if err != nil { return nil, err }; return &dynamicOutput{Body: ok(map[string]bool{"deleted": true})}, nil }, huma.OperationTags("roles"))
 	httpx.MustGroupDelete(api, "/roles", func(ctx context.Context, input *DeleteManyInput) (*dynamicOutput, error) {
 		for _, id := range parseIDsCSV(input.ID) {
@@ -203,9 +207,9 @@ func registerRBACEndpoints(api *httpx.Group, roleSvc application.RoleService, gr
 		p := paginate(filtered, input.Page, input.PageSize)
 		return &dynamicOutput{Body: okPage(p.Items, p.Total, p.Page, p.PageSize)}, nil
 	}, huma.OperationTags("permission-groups"))
-	httpx.MustGroupGet(api, "/permission-groups/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) { it, found, err := groupSvc.GetPermissionGroup(ctx, input.ID); if err != nil { return nil, err }; if !found { return nil, httpx.NewError(404, "permission group not found") }; return &dynamicOutput{Body: ok(toPermissionGroupDTO(it))}, nil }, huma.OperationTags("permission-groups"))
+	httpx.MustGroupGet(api, "/permission-groups/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) { it, err := groupSvc.GetPermissionGroup(ctx, input.ID); if err != nil { return nil, err }; if it.IsAbsent() { return nil, httpx.NewError(404, "permission group not found") }; return &dynamicOutput{Body: ok(toPermissionGroupDTO(it.MustGet()))}, nil }, huma.OperationTags("permission-groups"))
 	httpx.MustGroupPost(api, "/permission-groups", func(ctx context.Context, input *CreatePermissionGroupInput) (*dynamicOutput, error) { it, err := groupSvc.CreatePermissionGroup(ctx, input.Body.Name, input.Body.Description); if err != nil { return nil, err }; return &dynamicOutput{Body: ok(toPermissionGroupDTO(it))}, nil }, huma.OperationTags("permission-groups"))
-	httpx.MustGroupPatch(api, "/permission-groups/{id}", func(ctx context.Context, input *PatchPermissionGroupInput) (*dynamicOutput, error) { it, found, err := groupSvc.UpdatePermissionGroup(ctx, input.ID, input.Body.Name, input.Body.Description); if err != nil { return nil, err }; if !found { return nil, httpx.NewError(404, "permission group not found") }; return &dynamicOutput{Body: ok(toPermissionGroupDTO(it))}, nil }, huma.OperationTags("permission-groups"))
+	httpx.MustGroupPatch(api, "/permission-groups/{id}", func(ctx context.Context, input *PatchPermissionGroupInput) (*dynamicOutput, error) { it, err := groupSvc.UpdatePermissionGroup(ctx, input.ID, input.Body.Name, input.Body.Description); if err != nil { return nil, err }; if it.IsAbsent() { return nil, httpx.NewError(404, "permission group not found") }; return &dynamicOutput{Body: ok(toPermissionGroupDTO(it.MustGet()))}, nil }, huma.OperationTags("permission-groups"))
 	httpx.MustGroupDelete(api, "/permission-groups/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) { _, err := groupSvc.DeletePermissionGroup(ctx, input.ID); if err != nil { return nil, err }; return &dynamicOutput{Body: ok(map[string]bool{"deleted": true})}, nil }, huma.OperationTags("permission-groups"))
 	httpx.MustGroupDelete(api, "/permission-groups", func(ctx context.Context, input *DeleteManyInput) (*dynamicOutput, error) {
 		for _, id := range parseIDsCSV(input.ID) {
@@ -237,19 +241,19 @@ func registerRBACEndpoints(api *httpx.Group, roleSvc application.RoleService, gr
 		p := paginate(filtered, input.Page, input.PageSize)
 		return &dynamicOutput{Body: okPage(p.Items, p.Total, p.Page, p.PageSize)}, nil
 	}, huma.OperationTags("permissions"))
-	httpx.MustGroupGet(api, "/permissions/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) { it, found, err := permSvc.GetPermission(ctx, input.ID); if err != nil { return nil, err }; if !found { return nil, httpx.NewError(404, "permission not found") }; return &dynamicOutput{Body: ok(toPermissionDTO(it))}, nil }, huma.OperationTags("permissions"))
+	httpx.MustGroupGet(api, "/permissions/{id}", func(ctx context.Context, input *ByIDInput) (*dynamicOutput, error) { it, err := permSvc.GetPermission(ctx, input.ID); if err != nil { return nil, err }; if it.IsAbsent() { return nil, httpx.NewError(404, "permission not found") }; return &dynamicOutput{Body: ok(toPermissionDTO(it.MustGet()))}, nil }, huma.OperationTags("permissions"))
 	httpx.MustGroupPost(api, "/permissions", func(ctx context.Context, input *CreatePermissionInput) (*dynamicOutput, error) { it, err := permSvc.CreatePermission(ctx, input.Body.Name, input.Body.Code, input.Body.GroupID); if err != nil { return nil, err }; return &dynamicOutput{Body: ok(toPermissionDTO(it))}, nil }, huma.OperationTags("permissions"))
-	httpx.MustGroupPatch(api, "/permissions/{id}", func(ctx context.Context, input *PatchPermissionInput) (*dynamicOutput, error) { it, found, err := permSvc.UpdatePermission(ctx, input.ID, input.Body.Name, input.Body.Code, input.Body.GroupID); if err != nil { return nil, err }; if !found { return nil, httpx.NewError(404, "permission not found") }; return &dynamicOutput{Body: ok(toPermissionDTO(it))}, nil }, huma.OperationTags("permissions"))
+	httpx.MustGroupPatch(api, "/permissions/{id}", func(ctx context.Context, input *PatchPermissionInput) (*dynamicOutput, error) { it, err := permSvc.UpdatePermission(ctx, input.ID, input.Body.Name, input.Body.Code, input.Body.GroupID); if err != nil { return nil, err }; if it.IsAbsent() { return nil, httpx.NewError(404, "permission not found") }; return &dynamicOutput{Body: ok(toPermissionDTO(it.MustGet()))}, nil }, huma.OperationTags("permissions"))
 	httpx.MustGroupPatch(api, "/permissions/bulk", func(ctx context.Context, input *BulkPatchInput) (*dynamicOutput, error) {
 		ids := parseIDsCSV(input.ID)
 		updated := make([]permissionDTO, 0, len(ids))
 		for _, id := range ids {
-			it, found, err := permSvc.UpdatePermission(ctx, id, nil, nil, input.Body.GroupID)
+			it, err := permSvc.UpdatePermission(ctx, id, nil, nil, input.Body.GroupID)
 			if err != nil {
 				return nil, err
 			}
-			if found {
-				updated = append(updated, toPermissionDTO(it))
+			if it.IsPresent() {
+				updated = append(updated, toPermissionDTO(it.MustGet()))
 			}
 		}
 		return &dynamicOutput{Body: ok(updated)}, nil
