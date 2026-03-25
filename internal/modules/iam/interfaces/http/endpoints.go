@@ -58,8 +58,7 @@ func getUserDTO(ctx context.Context, userRoleSvc application.UserRoleService, u 
 
 func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, userRoleSvc application.UserRoleService, principalSvc application.AuthPrincipalService) {
 	httpx.MustGroupGet(api, "/users", func(ctx context.Context, input *ListResourceInput) (*dynamicOutput, error) { // truncated behavior parity
-		if ids := parseIDsCSV(input.ID); len(ids) > 0 {
-			validIDs := parseInt64IDsCSV(input.ID)
+		if validIDs := parseInt64IDsCSV(input.ID); len(validIDs) > 0 {
 			res := make([]userDTO, 0, len(validIDs))
 			for _, id := range validIDs {
 				dto, found, err := getUserDTOByID(ctx, userSvc, userRoleSvc, id)
