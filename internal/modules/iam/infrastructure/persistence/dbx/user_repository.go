@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	legacydomain "github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
+	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/schema"
 	"github.com/DaiYuANg/arcgo/dbx"
@@ -26,7 +26,7 @@ func NewUserRepository(db *dbx.DB, s UserSchema) persistence.UserRepository {
 	return &userRepo{db: db, schema: s, repo: repository.New[UserRow](db, s)}
 }
 
-func (r *userRepo) List(ctx context.Context, search string, limit, offset int) ([]legacydomain.User, int, error) {
+func (r *userRepo) List(ctx context.Context, search string, limit, offset int) ([]iamdomain.User, int, error) {
 	s := r.schema
 	specs := []repository.Spec{repository.OrderBy(s.ID.Asc())}
 	if search != "" {
@@ -47,26 +47,26 @@ func (r *userRepo) List(ctx context.Context, search string, limit, offset int) (
 	if err != nil {
 		return nil, 0, err
 	}
-	users := make([]legacydomain.User, len(rows))
+	users := make([]iamdomain.User, len(rows))
 	for i, row := range rows {
-		users[i] = legacydomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
+		users[i] = iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
 	}
 	return users, int(total), nil
 }
 
-func (r *userRepo) GetByID(ctx context.Context, id int64) (legacydomain.User, bool, error) {
+func (r *userRepo) GetByID(ctx context.Context, id int64) (iamdomain.User, bool, error) {
 	s := r.schema
 	row, err := r.repo.FirstSpec(ctx, repository.Where(s.ID.Eq(id)))
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return legacydomain.User{}, false, nil
+			return iamdomain.User{}, false, nil
 		}
-		return legacydomain.User{}, false, err
+		return iamdomain.User{}, false, err
 	}
-	return legacydomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}, true, nil
+	return iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}, true, nil
 }
 
-func (r *userRepo) Create(ctx context.Context, in legacydomain.CreateUserInput) (legacydomain.User, error) {
+func (r *userRepo) Create(ctx context.Context, in iamdomain.CreateUserInput) (iamdomain.User, error) {
 	now := time.Now().UTC()
 	row := UserRow{
 		Name:      in.Name,
@@ -76,12 +76,12 @@ func (r *userRepo) Create(ctx context.Context, in legacydomain.CreateUserInput) 
 		UpdatedAt: now,
 	}
 	if err := r.repo.Create(ctx, &row); err != nil {
-		return legacydomain.User{}, err
+		return iamdomain.User{}, err
 	}
-	return legacydomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}, nil
+	return iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}, nil
 }
 
-func (r *userRepo) Update(ctx context.Context, id int64, in legacydomain.UpdateUserInput) (legacydomain.User, bool, error) {
+func (r *userRepo) Update(ctx context.Context, id int64, in iamdomain.UpdateUserInput) (iamdomain.User, bool, error) {
 	s := r.schema
 	assignments := []dbx.Assignment{s.UpdatedAt.Set(time.Now().UTC())}
 	if in.Name != nil {
@@ -95,11 +95,11 @@ func (r *userRepo) Update(ctx context.Context, id int64, in legacydomain.UpdateU
 	}
 	res, err := r.repo.UpdateByID(ctx, id, assignments...)
 	if err != nil {
-		return legacydomain.User{}, false, err
+		return iamdomain.User{}, false, err
 	}
 	ra, _ := res.RowsAffected()
 	if ra == 0 {
-		return legacydomain.User{}, false, nil
+		return iamdomain.User{}, false, nil
 	}
 	out, ok, err := r.GetByID(ctx, id)
 	return out, ok, err

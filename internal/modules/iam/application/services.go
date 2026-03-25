@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	legacydomain "github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/event"
 	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence"
@@ -27,32 +26,27 @@ func (s *userAppService) List(ctx context.Context, search string, limit, offset 
 	if err != nil {
 		return nil, 0, err
 	}
-	out := make([]iamdomain.User, len(items))
-	for i, it := range items {
-		out[i] = iamdomain.User(it)
-	}
-	return out, total, nil
+	return items, total, nil
 }
 
 func (s *userAppService) Get(ctx context.Context, id int64) (iamdomain.User, bool, error) {
 	it, ok, err := s.repo.GetByID(ctx, id)
-	return iamdomain.User(it), ok, err
+	return it, ok, err
 }
 
 func (s *userAppService) Create(ctx context.Context, in iamdomain.CreateUserInput) (iamdomain.User, error) {
-	user, err := s.repo.Create(ctx, legacydomain.CreateUserInput{Name: in.Name, Email: in.Email, Age: in.Age})
+	user, err := s.repo.Create(ctx, in)
 	if err != nil {
 		return iamdomain.User{}, err
 	}
 	_ = s.bus.PublishAsync(ctx, event.UserCreatedEvent{
 		UserID: user.ID, UserName: user.Name, Email: user.Email, CreatedAt: user.CreatedAt,
 	})
-	return iamdomain.User(user), nil
+	return user, nil
 }
 
 func (s *userAppService) Update(ctx context.Context, id int64, in iamdomain.UpdateUserInput) (iamdomain.User, bool, error) {
-	user, ok, err := s.repo.Update(ctx, id, legacydomain.UpdateUserInput{Name: in.Name, Email: in.Email, Age: in.Age})
-	return iamdomain.User(user), ok, err
+	return s.repo.Update(ctx, id, in)
 }
 
 func (s *userAppService) Delete(ctx context.Context, id int64) (bool, error) {

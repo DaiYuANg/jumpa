@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"time"
 
-	legacydomain "github.com/DaiYuANg/arcgo-rbac-template/internal/domain"
+	iamdomaind "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
 )
 
 type UserRepository interface {
-	List(ctx context.Context, search string, limit, offset int) ([]legacydomain.User, int, error)
-	GetByID(ctx context.Context, id int64) (legacydomain.User, bool, error)
-	Create(ctx context.Context, in legacydomain.CreateUserInput) (legacydomain.User, error)
-	Update(ctx context.Context, id int64, in legacydomain.UpdateUserInput) (legacydomain.User, bool, error)
+	List(ctx context.Context, search string, limit, offset int) ([]iamdomaind.User, int, error)
+	GetByID(ctx context.Context, id int64) (iamdomaind.User, bool, error)
+	Create(ctx context.Context, in iamdomaind.CreateUserInput) (iamdomaind.User, error)
+	Update(ctx context.Context, id int64, in iamdomaind.UpdateUserInput) (iamdomaind.User, bool, error)
 	Delete(ctx context.Context, id int64) (bool, error)
 }
 
