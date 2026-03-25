@@ -36,24 +36,39 @@ func NewRBACEndpoint(roleSvc application.RoleService, groupSvc application.Permi
 func (e *UserEndpoint) RegisterRoutes(server httpx.ServerRuntime) { registerUserEndpoints(server.Group("/api"), e.userSvc, e.userRoleSvc, e.principalSvc) }
 func (e *RBACEndpoint) RegisterRoutes(server httpx.ServerRuntime) { registerRBACEndpoints(server.Group("/api"), e.roleSvc, e.groupSvc, e.permSvc) }
 
+func getUserDTOByID(ctx context.Context, userSvc application.UserService, userRoleSvc application.UserRoleService, id int64) (userDTO, bool, error) {
+	u, found, err := userSvc.Get(ctx, id)
+	if err != nil || !found {
+		return userDTO{}, found, err
+	}
+	roleIDs, err := userRoleSvc.ListUserRoleIDs(ctx, u.ID)
+	if err != nil {
+		return userDTO{}, false, err
+	}
+	return toUserDTO(u, roleIDs), true, nil
+}
+
+func getUserDTO(ctx context.Context, userRoleSvc application.UserRoleService, u iamdomain.User) (userDTO, error) {
+	roleIDs, err := userRoleSvc.ListUserRoleIDs(ctx, u.ID)
+	if err != nil {
+		return userDTO{}, err
+	}
+	return toUserDTO(u, roleIDs), nil
+}
+
 func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, userRoleSvc application.UserRoleService, principalSvc application.AuthPrincipalService) {
 	httpx.MustGroupGet(api, "/users", func(ctx context.Context, input *ListResourceInput) (*dynamicOutput, error) { // truncated behavior parity
 		if ids := parseIDsCSV(input.ID); len(ids) > 0 {
 			validIDs := parseInt64IDsCSV(input.ID)
 			res := make([]userDTO, 0, len(validIDs))
 			for _, id := range validIDs {
-				u, found, err := userSvc.Get(ctx, id)
+				dto, found, err := getUserDTOByID(ctx, userSvc, userRoleSvc, id)
 				if err != nil {
 					return nil, err
 				}
-				if !found {
-					continue
+				if found {
+					res = append(res, dto)
 				}
-				roleIDs, err := userRoleSvc.ListUserRoleIDs(ctx, u.ID)
-				if err != nil {
-					return nil, err
-				}
-				res = append(res, toUserDTO(u, roleIDs))
 			}
 			return &dynamicOutput{Body: ok(res)}, nil
 		}
@@ -71,11 +86,11 @@ func registerUserEndpoints(api *httpx.Group, userSvc application.UserService, us
 		}
 		out := make([]userDTO, len(items))
 		for i, u := range items {
-			roleIDs, roleErr := userRoleSvc.ListUserRoleIDs(ctx, u.ID)
-			if roleErr != nil {
-				return nil, roleErr
+			dto, err := getUserDTO(ctx, userRoleSvc, u)
+			if err != nil {
+				return nil, err
 			}
-			out[i] = toUserDTO(u, roleIDs)
+			out[i] = dto
 		}
 		return &dynamicOutput{Body: okPage(out, total, page, pageSize)}, nil
 	}, huma.OperationTags("users"))
