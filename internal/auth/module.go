@@ -15,6 +15,7 @@ import (
 	"github.com/DaiYuANg/arcgo/kvx"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/samber/lo"
+	"github.com/samber/mo"
 )
 
 type jwtClaims struct {
@@ -70,7 +71,7 @@ func parseAccessToken(secret, issuer, token string) (*jwtClaims, error) {
 	return claims, nil
 }
 
-func principalFromDB(ctx context.Context, db *dbx.DB, email string) (authx.Principal, bool, error) {
+func principalFromDB(ctx context.Context, db *dbx.DB, email string) (mo.Option[authx.Principal], error) {
 	ps := dbx.MustSchema("app_auth_principals", authPrincipalSchema{})
 	prs := dbx.MustSchema("app_auth_principal_roles", authPrincipalRoleSchema{})
 	pps := dbx.MustSchema("app_auth_principal_permissions", authPrincipalPermissionSchema{})
@@ -79,10 +80,10 @@ func principalFromDB(ctx context.Context, db *dbx.DB, email string) (authx.Princ
 		dbx.MustMapper[authPrincipalRow](ps),
 	)
 	if err != nil {
-		return authx.Principal{}, false, err
+		return mo.None[authx.Principal](), err
 	}
 	if len(rows) == 0 {
-		return authx.Principal{}, false, nil
+		return mo.None[authx.Principal](), nil
 	}
 	row := rows[0]
 	roleRows, err := dbx.QueryAll[authPrincipalRoleRow](ctx, db,
@@ -90,22 +91,22 @@ func principalFromDB(ctx context.Context, db *dbx.DB, email string) (authx.Princ
 		dbx.MustMapper[authPrincipalRoleRow](prs),
 	)
 	if err != nil {
-		return authx.Principal{}, false, err
+		return mo.None[authx.Principal](), err
 	}
 	permRows, err := dbx.QueryAll[authPrincipalPermissionRow](ctx, db,
 		dbx.Select(pps.AllColumns()...).From(pps).Where(pps.PrincipalID.Eq(row.ID)),
 		dbx.MustMapper[authPrincipalPermissionRow](pps),
 	)
 	if err != nil {
-		return authx.Principal{}, false, err
+		return mo.None[authx.Principal](), err
 	}
 	roles := lo.Map(roleRows, func(rr authPrincipalRoleRow, _ int) string { return rr.Role })
 	perms := lo.Map(permRows, func(pr authPrincipalPermissionRow, _ int) string { return pr.Permission })
-	return authx.Principal{
+	return mo.Some(authx.Principal{
 		ID:          row.ID,
 		Roles:       roles,
 		Permissions: perms,
-	}, true, nil
+	}), nil
 }
 
 func hasPermission(pr authx.Principal, perm string) bool {
@@ -132,18 +133,19 @@ var Module = dix.NewModule("auth",
 							return authx.AuthenticationResult{}, authx.ErrUnauthenticated
 						}
 					}
-					pr, ok, dbErr := principalFromDB(ctx, db, claims.Email)
+					pr, dbErr := principalFromDB(ctx, db, claims.Email)
 					if dbErr != nil {
 						return authx.AuthenticationResult{}, authx.ErrUnauthenticated
 					}
-					if !ok {
+					if pr.IsAbsent() {
 						return authx.AuthenticationResult{}, authx.ErrUnauthenticated
 					}
-					pr.Attributes = map[string]any{
+					principal := pr.MustGet()
+					principal.Attributes = map[string]any{
 						"email": claims.Email,
 						"exp":   claims.ExpiresAt.Time.Format(time.RFC3339),
 					}
-					return authx.AuthenticationResult{Principal: pr}, nil
+					return authx.AuthenticationResult{Principal: principal}, nil
 				})),
 				authx.WithAuthorizer(authx.AuthorizerFunc(func(_ context.Context, input authx.AuthorizationModel) (authx.Decision, error) {
 					pr, ok := input.Principal.(authx.Principal)
