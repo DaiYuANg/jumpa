@@ -1,4 +1,4 @@
-package utils
+package pkg
 
 import (
 	"strings"
@@ -19,4 +19,3 @@ func ParseCSVList(raw string) []string {
 		return v, v != ""
 	})
 }
-

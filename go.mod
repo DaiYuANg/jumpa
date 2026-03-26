@@ -12,20 +12,20 @@ tool (
 )
 
 require (
-	github.com/DaiYuANg/arcgo/authx v0.0.2
-	github.com/DaiYuANg/arcgo/collectionx v0.0.2
-	github.com/DaiYuANg/arcgo/configx v0.0.2
-	github.com/DaiYuANg/arcgo/dbx v0.0.3
+	github.com/DaiYuANg/arcgo/authx v0.0.3
+	github.com/DaiYuANg/arcgo/collectionx v0.0.3
+	github.com/DaiYuANg/arcgo/configx v0.0.3
+	github.com/DaiYuANg/arcgo/dbx v0.0.4
 	github.com/DaiYuANg/arcgo/dbx/migrate v0.0.2
-	github.com/DaiYuANg/arcgo/dix v0.0.2
-	github.com/DaiYuANg/arcgo/eventx v0.0.2
-	github.com/DaiYuANg/arcgo/httpx v0.0.2
-	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.0.2
-	github.com/DaiYuANg/arcgo/kvx v0.0.3
-	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.0.3
-	github.com/DaiYuANg/arcgo/logx v0.0.2
+	github.com/DaiYuANg/arcgo/dix v0.0.3
+	github.com/DaiYuANg/arcgo/eventx v0.0.3
+	github.com/DaiYuANg/arcgo/httpx v0.0.3
+	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.0.3
+	github.com/DaiYuANg/arcgo/kvx v0.0.4
+	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.0.4
+	github.com/DaiYuANg/arcgo/logx v0.0.3
 	github.com/DaiYuANg/arcgo/pkg/randomport v0.0.2
-	github.com/danielgtaylor/huma/v2 v2.37.2
+	github.com/danielgtaylor/huma/v2 v2.37.3
 	github.com/go-co-op/gocron/v2 v2.19.1
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/go-sql-driver/mysql v1.9.3
@@ -33,6 +33,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/samber/lo v1.53.0
+	github.com/samber/mo v1.16.0
 	modernc.org/sqlite v1.47.0
 )
 
@@ -66,8 +67,8 @@ require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/echo v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/gin v0.0.1 // indirect
-	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.0.2 // indirect
-	github.com/DaiYuANg/arcgo/observabilityx v0.0.2 // indirect
+	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.0.3 // indirect
+	github.com/DaiYuANg/arcgo/observabilityx v0.0.3 // indirect
 	github.com/Djarvur/go-err113 v0.1.1 // indirect
 	github.com/DmitriyVTitov/size v1.5.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
@@ -321,11 +322,10 @@ require (
 	github.com/samber/go-singleflightx v0.3.2 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 	github.com/samber/hot v0.13.0 // indirect
-	github.com/samber/mo v1.16.0 // indirect
 	github.com/samber/oops v1.21.0 // indirect
-	github.com/samber/oops/loggers/zerolog v0.0.0-20260323031308-0102cc933be9 // indirect
+	github.com/samber/oops/loggers/zerolog v0.0.0-20260325233024-fdc4d78178db // indirect
 	github.com/samber/slog-common v0.21.0 // indirect
-	github.com/samber/slog-zerolog/v2 v2.9.1 // indirect
+	github.com/samber/slog-zerolog/v2 v2.9.2 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect

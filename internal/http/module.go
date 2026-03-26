@@ -8,7 +8,7 @@ import (
 	"github.com/DaiYuANg/arcgo-rbac-template/internal/api"
 	auth2 "github.com/DaiYuANg/arcgo-rbac-template/internal/auth"
 	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/utils"
+	"github.com/DaiYuANg/arcgo-rbac-template/pkg"
 	"github.com/DaiYuANg/arcgo/authx"
 	authhttp "github.com/DaiYuANg/arcgo/authx/http"
 	collectionset "github.com/DaiYuANg/arcgo/collectionx/set"
@@ -56,10 +56,10 @@ func authzPolicyFromConfig(cfg config2.AppConfig) AuthzPolicyConfig {
 		p.ProtectedPrefix = strings.TrimSpace(cfg.Authz.ProtectedPrefix)
 	}
 	if strings.TrimSpace(cfg.Authz.PublicPathsCSV) != "" {
-		p.PublicPaths = utils.ParseCSVList(cfg.Authz.PublicPathsCSV)
+		p.PublicPaths = pkg.ParseCSVList(cfg.Authz.PublicPathsCSV)
 	}
 	if strings.TrimSpace(cfg.Authz.AuthOnlyResourcesCSV) != "" {
-		p.AuthOnlyResources = utils.ParseCSVList(cfg.Authz.AuthOnlyResourcesCSV)
+		p.AuthOnlyResources = pkg.ParseCSVList(cfg.Authz.AuthOnlyResourcesCSV)
 	}
 	return p
 }

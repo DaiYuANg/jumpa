@@ -62,8 +62,9 @@ var Module = dix.NewModule("scheduler",
 		}),
 	),
 	dix.WithModuleSetup(func(c *dix.Container, lc dix.Lifecycle) error {
-		s, _ := dix.ResolveAs[gocron.Scheduler](c)
-		cfg, _ := dix.ResolveAs[config2.AppConfig](c)
+		s := dix.MustResolveAs[gocron.Scheduler](c)
+
+		cfg := dix.MustResolveAs[config2.AppConfig](c)
 
 		lc.OnStart(func(ctx context.Context) error {
 			if cfg.Scheduler.Enabled {

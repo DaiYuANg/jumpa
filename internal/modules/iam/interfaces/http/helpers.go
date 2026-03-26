@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/utils"
+	"github.com/DaiYuANg/arcgo-rbac-template/pkg"
 	"github.com/samber/lo"
 )
 
@@ -13,7 +13,7 @@ func okPage[T any](items []T, total, page, pageSize int) Result[PageResult[T]] {
 	return ok(PageResult[T]{Items: items, Total: total, Page: page, PageSize: pageSize})
 }
 func parseIDsCSV(raw string) []string {
-	return utils.ParseCSVList(raw)
+	return pkg.ParseCSVList(raw)
 }
 
 func parseInt64IDsCSV(raw string) []int64 {

@@ -30,7 +30,10 @@ var Module = dix.NewModule("db",
 		}),
 	),
 	dix.WithModuleSetup(func(c *dix.Container, lc dix.Lifecycle) error {
-		database, _ := dix.ResolveAs[*dbx.DB](c)
+		database, err := dix.ResolveAs[*dbx.DB](c)
+		if err != nil {
+			return err
+		}
 		lc.OnStop(func(ctx context.Context) error { return database.Close() })
 		return nil
 	}),

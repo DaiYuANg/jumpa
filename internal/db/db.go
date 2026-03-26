@@ -35,7 +35,7 @@ func OpenSQLite(dsn string, opts ...dbx.Option) (*dbx.DB, error) {
 	db, err := dbx.Open(
 		dbx.WithDriver("sqlite"),
 		dbx.WithDSN(dsn),
-		dbx.WithDialect(sqlitedialect.Dialect{}),
+		dbx.WithDialect(sqlitedialect.New()),
 		dbx.ApplyOptions(opts...),
 	)
 	if err != nil {
@@ -55,7 +55,7 @@ func OpenMySQL(dsn string, opts ...dbx.Option) (*dbx.DB, error) {
 	db, err := dbx.Open(
 		dbx.WithDriver("mysql"),
 		dbx.WithDSN(dsn),
-		dbx.WithDialect(mysql.Dialect{}),
+		dbx.WithDialect(mysql.New()),
 		dbx.ApplyOptions(opts...),
 	)
 	if err != nil {
@@ -71,7 +71,7 @@ func OpenPostgres(dsn string, opts ...dbx.Option) (*dbx.DB, error) {
 	db, err := dbx.Open(
 		dbx.WithDriver("pgx"),
 		dbx.WithDSN(dsn),
-		dbx.WithDialect(postgres.Dialect{}),
+		dbx.WithDialect(postgres.New()),
 		dbx.ApplyOptions(opts...),
 	)
 	if err != nil {

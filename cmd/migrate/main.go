@@ -3,19 +3,14 @@ package main
 import (
 	"context"
 	"embed"
-	"fmt"
 	"log/slog"
 	"os"
-	"strings"
 
 	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
 	db2 "github.com/DaiYuANg/arcgo-rbac-template/internal/db"
+	"github.com/DaiYuANg/arcgo-rbac-template/pkg"
 	"github.com/DaiYuANg/arcgo/configx"
 	"github.com/DaiYuANg/arcgo/dbx"
-	"github.com/DaiYuANg/arcgo/dbx/dialect"
-	"github.com/DaiYuANg/arcgo/dbx/dialect/mysql"
-	"github.com/DaiYuANg/arcgo/dbx/dialect/postgres"
-	sqlitedialect "github.com/DaiYuANg/arcgo/dbx/dialect/sqlite"
 	"github.com/DaiYuANg/arcgo/dbx/migrate"
 	"github.com/DaiYuANg/arcgo/logx"
 )
@@ -36,19 +31,6 @@ func loadConfig() (config2.AppConfig, error) {
 	return cfg, nil
 }
 
-func selectDialect(driver string) (dialect.Dialect, error) {
-	switch strings.ToLower(strings.TrimSpace(driver)) {
-	case "", "sqlite":
-		return sqlitedialect.Dialect{}, nil
-	case "mysql":
-		return mysql.Dialect{}, nil
-	case "postgres", "postgresql":
-		return postgres.Dialect{}, nil
-	default:
-		return nil, fmt.Errorf("unsupported db driver %q", driver)
-	}
-}
-
 func main() {
 	logger := logx.MustNew(logx.WithConsole(true), logx.WithTraceLevel())
 	defer func() { _ = logx.Close(logger) }()
@@ -65,12 +47,12 @@ func main() {
 	}
 	db, err := db2.Open(cfg.DB.Driver, cfg.DB.DSN, opts...)
 	if err != nil {
-		logger.Error("open database failed", slog.String("error", err.Error()))
+		logger.Error("open database failed", slog.String("err", err.Error()))
 		os.Exit(1)
 	}
 	defer func() { _ = db.Close() }()
 
-	d, err := selectDialect(cfg.DB.Driver)
+	d, err := pkg.SelectDialect(cfg.DB.Driver)
 	if err != nil {
 		logger.Error("select dialect failed", slog.String("error", err.Error()))
 		os.Exit(1)
