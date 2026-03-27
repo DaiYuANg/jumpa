@@ -32,7 +32,7 @@ func loadConfig() (config2.AppConfig, error) {
 }
 
 func main() {
-	logger := logx.MustNew(logx.WithConsole(true), logx.WithTraceLevel())
+	logger := logx.MustNew(logx.WithConsole(true), logx.WithDebugLevel())
 	defer func() { _ = logx.Close(logger) }()
 
 	cfg, err := loadConfig()
