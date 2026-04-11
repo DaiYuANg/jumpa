@@ -24,11 +24,14 @@ var Module = dix.NewModule("bastion",
 		dix.Provider1(func(policyRepo ports.PolicyRepository) application.PolicyService {
 			return application.NewPolicyService(policyRepo)
 		}),
-		dix.Provider2(func(policyRepo ports.PolicyRepository, principalRepo ports.PrincipalAccessRepository) application.AccessService {
-			return application.NewAccessService(policyRepo, principalRepo)
+		dix.Provider3(func(policyRepo ports.PolicyRepository, principalRepo ports.PrincipalAccessRepository, accessRequestRepo ports.AccessRequestRepository) application.AccessService {
+			return application.NewAccessService(policyRepo, principalRepo, accessRequestRepo)
 		}),
 		dix.Provider1(func(sessionRepo ports.SessionRepository) application.SessionService {
 			return application.NewSessionService(sessionRepo)
+		}),
+		dix.Provider1(func(accessRequestRepo ports.AccessRequestRepository) application.AccessRequestService {
+			return application.NewAccessRequestService(accessRequestRepo)
 		}),
 		dix.Provider2(func(sessionRepo ports.SessionRepository, eventRepo ports.SessionEventRepository) application.SessionRuntimeService {
 			return application.NewSessionRuntimeService(sessionRepo, eventRepo)

@@ -76,3 +76,4 @@ Temporary Items
 .idea
 *.db
 dist
+.gocache

@@ -16,6 +16,7 @@ type BastionEndpoint struct {
 	overviewSvc application.OverviewService
 	assetSvc    application.AssetService
 	policySvc   application.PolicyService
+	requestSvc  application.AccessRequestService
 	sessionSvc  application.SessionService
 }
 
@@ -23,18 +24,20 @@ func NewBastionEndpoint(
 	overviewSvc application.OverviewService,
 	assetSvc application.AssetService,
 	policySvc application.PolicyService,
+	requestSvc application.AccessRequestService,
 	sessionSvc application.SessionService,
 ) *BastionEndpoint {
 	return &BastionEndpoint{
 		overviewSvc: overviewSvc,
 		assetSvc:    assetSvc,
 		policySvc:   policySvc,
+		requestSvc:  requestSvc,
 		sessionSvc:  sessionSvc,
 	}
 }
 
 func (e *BastionEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	registerBastionEndpoints(server.Group("/api"), e.overviewSvc, e.assetSvc, e.policySvc, e.sessionSvc)
+	registerBastionEndpoints(server.Group("/api"), e.overviewSvc, e.assetSvc, e.policySvc, e.requestSvc, e.sessionSvc)
 }
 
 func registerBastionEndpoints(
@@ -42,6 +45,7 @@ func registerBastionEndpoints(
 	overviewSvc application.OverviewService,
 	assetSvc application.AssetService,
 	policySvc application.PolicyService,
+	requestSvc application.AccessRequestService,
 	sessionSvc application.SessionService,
 ) {
 	httpx.MustGroupGet(api, "/bastion/overview", func(ctx context.Context, _ *struct{}) (*apiendpoints.DynamicOutput, error) {
@@ -249,6 +253,47 @@ func registerBastionEndpoints(
 		return &apiendpoints.DynamicOutput{Body: apiendpoints.OK(map[string]bool{"deleted": true})}, nil
 	}, huma.OperationTags("access"))
 
+	httpx.MustGroupGet(api, "/access-requests", func(ctx context.Context, _ *struct{}) (*apiendpoints.DynamicOutput, error) {
+		items, err := requestSvc.ListRequests(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &apiendpoints.DynamicOutput{Body: apiendpoints.OK(toAccessRequestDTOs(items))}, nil
+	}, huma.OperationTags("access"))
+
+	httpx.MustGroupGet(api, "/access-requests/{id}", func(ctx context.Context, input *apiendpoints.ByIDInput) (*apiendpoints.DynamicOutput, error) {
+		item, err := requestSvc.GetRequest(ctx, input.ID)
+		if err != nil {
+			return nil, err
+		}
+		if item.IsAbsent() {
+			return nil, httpx.NewError(404, "access request not found")
+		}
+		return &apiendpoints.DynamicOutput{Body: apiendpoints.OK(toAccessRequestDTOs([]bastiondomain.AccessRequest{item.MustGet()})[0])}, nil
+	}, huma.OperationTags("access"))
+
+	httpx.MustGroupPost(api, "/access-requests/{id}/approve", func(ctx context.Context, input *reviewAccessRequestInput) (*apiendpoints.DynamicOutput, error) {
+		item, err := requestSvc.Approve(ctx, input.ID, input.Body.Reviewer, input.Body.Comment)
+		if err != nil {
+			return nil, err
+		}
+		if item.IsAbsent() {
+			return nil, httpx.NewError(404, "access request not found")
+		}
+		return &apiendpoints.DynamicOutput{Body: apiendpoints.OK(toAccessRequestDTOs([]bastiondomain.AccessRequest{item.MustGet()})[0])}, nil
+	}, huma.OperationTags("access"))
+
+	httpx.MustGroupPost(api, "/access-requests/{id}/reject", func(ctx context.Context, input *reviewAccessRequestInput) (*apiendpoints.DynamicOutput, error) {
+		item, err := requestSvc.Reject(ctx, input.ID, input.Body.Reviewer, input.Body.Comment)
+		if err != nil {
+			return nil, err
+		}
+		if item.IsAbsent() {
+			return nil, httpx.NewError(404, "access request not found")
+		}
+		return &apiendpoints.DynamicOutput{Body: apiendpoints.OK(toAccessRequestDTOs([]bastiondomain.AccessRequest{item.MustGet()})[0])}, nil
+	}, huma.OperationTags("access"))
+
 	httpx.MustGroupGet(api, "/sessions", func(ctx context.Context, _ *struct{}) (*apiendpoints.DynamicOutput, error) {
 		items, err := sessionSvc.ListSessions(ctx)
 		if err != nil {
@@ -336,6 +381,25 @@ func toSessionDTOs(items []bastiondomain.Session) []sessionDTO {
 			Status:        it.Status,
 			StartedAt:     it.StartedAt,
 			EndedAt:       it.EndedAt,
+		}
+	})
+}
+
+func toAccessRequestDTOs(items []bastiondomain.AccessRequest) []accessRequestDTO {
+	return lo.Map(items, func(it bastiondomain.AccessRequest, _ int) accessRequestDTO {
+		return accessRequestDTO{
+			ID:             it.ID,
+			PolicyID:       it.PolicyID,
+			PrincipalName:  it.PrincipalName,
+			PrincipalEmail: it.PrincipalEmail,
+			HostName:       it.HostName,
+			HostAccount:    it.HostAccount,
+			Protocol:       it.Protocol,
+			Status:         it.Status,
+			RequestedAt:    it.RequestedAt,
+			ReviewedAt:     it.ReviewedAt,
+			ReviewedBy:     it.ReviewedBy,
+			ReviewComment:  it.ReviewComment,
 		}
 	})
 }

@@ -50,6 +50,7 @@ type AccessDecision struct {
 	ApprovalRequired  bool
 	RecordingRequired bool
 	MatchedPolicyID   string
+	RequestID         string
 	Reason            string
 }
 
@@ -121,6 +122,13 @@ type UpdatePolicyInput struct {
 
 type SessionService interface {
 	ListSessions(ctx context.Context) ([]bastiondomain.Session, error)
+}
+
+type AccessRequestService interface {
+	ListRequests(ctx context.Context) ([]bastiondomain.AccessRequest, error)
+	GetRequest(ctx context.Context, id string) (mo.Option[bastiondomain.AccessRequest], error)
+	Approve(ctx context.Context, id, reviewer string, comment *string) (mo.Option[bastiondomain.AccessRequest], error)
+	Reject(ctx context.Context, id, reviewer string, comment *string) (mo.Option[bastiondomain.AccessRequest], error)
 }
 
 type StartSessionInput struct {

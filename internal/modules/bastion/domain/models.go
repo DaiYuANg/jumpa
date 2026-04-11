@@ -21,12 +21,12 @@ type Host struct {
 }
 
 type HostAccount struct {
-	ID                 string     `json:"id"`
-	HostID             string     `json:"hostId"`
-	AccountName        string     `json:"accountName"`
-	AuthenticationType string     `json:"authenticationType"`
-	CredentialRef      *string    `json:"credentialRef,omitempty"`
-	CreatedAt          time.Time  `json:"createdAt"`
+	ID                 string    `json:"id"`
+	HostID             string    `json:"hostId"`
+	AccountName        string    `json:"accountName"`
+	AuthenticationType string    `json:"authenticationType"`
+	CredentialRef      *string   `json:"credentialRef,omitempty"`
+	CreatedAt          time.Time `json:"createdAt"`
 }
 
 type AccessPolicy struct {
@@ -52,6 +52,21 @@ type Session struct {
 	Status        string     `json:"status"`
 	StartedAt     time.Time  `json:"startedAt"`
 	EndedAt       *time.Time `json:"endedAt,omitempty"`
+}
+
+type AccessRequest struct {
+	ID             string     `json:"id"`
+	PolicyID       string     `json:"policyId"`
+	PrincipalName  string     `json:"principalName"`
+	PrincipalEmail string     `json:"principalEmail,omitempty"`
+	HostName       string     `json:"hostName"`
+	HostAccount    string     `json:"hostAccount"`
+	Protocol       string     `json:"protocol"`
+	Status         string     `json:"status"`
+	RequestedAt    time.Time  `json:"requestedAt"`
+	ReviewedAt     *time.Time `json:"reviewedAt,omitempty"`
+	ReviewedBy     *string    `json:"reviewedBy,omitempty"`
+	ReviewComment  *string    `json:"reviewComment,omitempty"`
 }
 
 type Overview struct {

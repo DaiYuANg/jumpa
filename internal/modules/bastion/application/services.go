@@ -34,12 +34,16 @@ type policyService struct {
 	policyRepo ports.PolicyRepository
 }
 type accessService struct {
-	policyRepo    ports.PolicyRepository
-	principalRepo ports.PrincipalAccessRepository
+	policyRepo        ports.PolicyRepository
+	principalRepo     ports.PrincipalAccessRepository
+	accessRequestRepo ports.AccessRequestRepository
 }
 type sessionService struct {
 	sessionRepo ports.SessionRepository
 	eventRepo   ports.SessionEventRepository
+}
+type accessRequestService struct {
+	repo ports.AccessRequestRepository
 }
 
 func NewOverviewService(cfg config2.AppConfig, provider identity.ProviderDescriptor, authenticator identity.Authenticator) OverviewService {
@@ -58,8 +62,8 @@ func NewPolicyService(policyRepo ports.PolicyRepository) PolicyService {
 	return &policyService{policyRepo: policyRepo}
 }
 
-func NewAccessService(policyRepo ports.PolicyRepository, principalRepo ports.PrincipalAccessRepository) AccessService {
-	return &accessService{policyRepo: policyRepo, principalRepo: principalRepo}
+func NewAccessService(policyRepo ports.PolicyRepository, principalRepo ports.PrincipalAccessRepository, accessRequestRepo ports.AccessRequestRepository) AccessService {
+	return &accessService{policyRepo: policyRepo, principalRepo: principalRepo, accessRequestRepo: accessRequestRepo}
 }
 
 func NewSessionService(sessionRepo ports.SessionRepository) SessionService {
@@ -68,6 +72,10 @@ func NewSessionService(sessionRepo ports.SessionRepository) SessionService {
 
 func NewSessionRuntimeService(sessionRepo ports.SessionRepository, eventRepo ports.SessionEventRepository) SessionRuntimeService {
 	return &sessionService{sessionRepo: sessionRepo, eventRepo: eventRepo}
+}
+
+func NewAccessRequestService(repo ports.AccessRequestRepository) AccessRequestService {
+	return &accessRequestService{repo: repo}
 }
 
 func (s *overviewService) Get(_ context.Context) (bastiondomain.Overview, error) {
@@ -375,11 +383,26 @@ func (s *accessService) Authorize(ctx context.Context, in AccessCheckInput) (Acc
 	}
 
 	if matched.ApprovalRequired {
+		request, requestErr := s.ensureAccessRequest(ctx, matched, in)
+		if requestErr != nil {
+			return AccessDecision{}, requestErr
+		}
+		if strings.EqualFold(request.Status, "approved") {
+			return AccessDecision{
+				Allowed:           true,
+				ApprovalRequired:  false,
+				RecordingRequired: matched.RecordingRequired,
+				MatchedPolicyID:   matched.ID,
+				RequestID:         request.ID,
+				Reason:            "matched approved access request",
+			}, nil
+		}
 		return AccessDecision{
 			Allowed:           false,
 			ApprovalRequired:  true,
 			RecordingRequired: matched.RecordingRequired,
 			MatchedPolicyID:   matched.ID,
+			RequestID:         request.ID,
 			Reason:            "matching policy requires approval workflow",
 		}, nil
 	}
@@ -391,6 +414,42 @@ func (s *accessService) Authorize(ctx context.Context, in AccessCheckInput) (Acc
 		MatchedPolicyID:   matched.ID,
 		Reason:            "matched access policy",
 	}, nil
+}
+
+func (s *accessRequestService) ListRequests(ctx context.Context) ([]bastiondomain.AccessRequest, error) {
+	items, err := s.repo.ListRequests(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]bastiondomain.AccessRequest, len(items))
+	for i, it := range items {
+		out[i] = toDomainAccessRequest(it)
+	}
+	return out, nil
+}
+
+func (s *accessRequestService) GetRequest(ctx context.Context, id string) (mo.Option[bastiondomain.AccessRequest], error) {
+	item, err := s.repo.GetRequestByID(ctx, id)
+	if err != nil || item.IsAbsent() {
+		return mo.None[bastiondomain.AccessRequest](), err
+	}
+	return mo.Some(toDomainAccessRequest(item.MustGet())), nil
+}
+
+func (s *accessRequestService) Approve(ctx context.Context, id, reviewer string, comment *string) (mo.Option[bastiondomain.AccessRequest], error) {
+	item, err := s.repo.UpdateRequestStatus(ctx, id, "approved", time.Now().UTC(), strings.TrimSpace(reviewer), normalizeOptionalString(comment))
+	if err != nil || item.IsAbsent() {
+		return mo.None[bastiondomain.AccessRequest](), err
+	}
+	return mo.Some(toDomainAccessRequest(item.MustGet())), nil
+}
+
+func (s *accessRequestService) Reject(ctx context.Context, id, reviewer string, comment *string) (mo.Option[bastiondomain.AccessRequest], error) {
+	item, err := s.repo.UpdateRequestStatus(ctx, id, "rejected", time.Now().UTC(), strings.TrimSpace(reviewer), normalizeOptionalString(comment))
+	if err != nil || item.IsAbsent() {
+		return mo.None[bastiondomain.AccessRequest](), err
+	}
+	return mo.Some(toDomainAccessRequest(item.MustGet())), nil
 }
 
 func (s *sessionService) Start(ctx context.Context, in StartSessionInput) (bastiondomain.Session, error) {
@@ -464,6 +523,23 @@ func toDomainSession(it ports.SessionRecord) bastiondomain.Session {
 	}
 }
 
+func toDomainAccessRequest(it ports.AccessRequestRecord) bastiondomain.AccessRequest {
+	return bastiondomain.AccessRequest{
+		ID:             it.ID,
+		PolicyID:       it.PolicyID,
+		PrincipalName:  it.PrincipalName,
+		PrincipalEmail: valueOrEmpty(it.PrincipalEmail),
+		HostName:       it.HostName,
+		HostAccount:    it.HostAccount,
+		Protocol:       it.Protocol,
+		Status:         it.Status,
+		RequestedAt:    it.RequestedAt,
+		ReviewedAt:     it.ReviewedAt,
+		ReviewedBy:     it.ReviewedBy,
+		ReviewComment:  it.ReviewComment,
+	}
+}
+
 func valueOrEmpty(v *string) string {
 	if v == nil {
 		return ""
@@ -479,16 +555,18 @@ func emptyStringToNil(v string) *string {
 }
 
 func matchesAccessPolicy(policy ports.AccessPolicyRecord, in AccessCheckInput, roleIDs []string) bool {
-	return matchesSubject(policy.SubjectType, policy.SubjectRef, in.PrincipalName, roleIDs) &&
+	return matchesSubject(policy.SubjectType, policy.SubjectRef, in.PrincipalName, in.PrincipalEmail, roleIDs) &&
 		matchesTarget(policy.TargetType, policy.TargetRef, in.HostName) &&
 		matchesProtocol(policy.Protocol, in.Protocol) &&
 		matchesPattern(policy.AccountPattern, in.AccountName)
 }
 
-func matchesSubject(subjectType, subjectRef, principalName string, roleIDs []string) bool {
+func matchesSubject(subjectType, subjectRef, principalName, principalEmail string, roleIDs []string) bool {
 	switch strings.ToLower(strings.TrimSpace(subjectType)) {
 	case "", "*", "user", "principal":
 		return matchesPattern(subjectRef, principalName)
+	case "email":
+		return matchesPattern(subjectRef, principalEmail)
 	case "role":
 		return lo.SomeBy(roleIDs, func(roleID string) bool {
 			return matchesPattern(subjectRef, roleID)
@@ -525,6 +603,37 @@ func matchesPattern(pattern, value string) bool {
 		return strings.EqualFold(pattern, value)
 	}
 	return ok
+}
+
+func (s *accessService) ensureAccessRequest(ctx context.Context, policy ports.AccessPolicyRecord, in AccessCheckInput) (ports.AccessRequestRecord, error) {
+	findInput := ports.FindAccessRequestInput{
+		PolicyID:      policy.ID,
+		PrincipalName: in.PrincipalName,
+		HostName:      in.HostName,
+		HostAccount:   in.AccountName,
+		Protocol:      in.Protocol,
+	}
+	if strings.TrimSpace(in.PrincipalEmail) != "" {
+		findInput.PrincipalEmail = &in.PrincipalEmail
+	}
+
+	request, err := s.accessRequestRepo.FindLatestRequest(ctx, findInput)
+	if err != nil {
+		return ports.AccessRequestRecord{}, err
+	}
+	if request.IsPresent() {
+		return request.MustGet(), nil
+	}
+
+	return s.accessRequestRepo.CreateRequest(ctx, ports.CreateAccessRequestInput{
+		PolicyID:       policy.ID,
+		PrincipalName:  in.PrincipalName,
+		PrincipalEmail: findInput.PrincipalEmail,
+		HostName:       in.HostName,
+		HostAccount:    in.AccountName,
+		Protocol:       in.Protocol,
+		RequestedAt:    time.Now().UTC(),
+	})
 }
 
 func normalizeOptionalString(v *string) *string {

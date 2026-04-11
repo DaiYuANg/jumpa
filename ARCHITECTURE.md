@@ -33,18 +33,19 @@ This project uses a DDD-style modular architecture for a bastion and jump-host c
 `internal/modules/bastion` currently provides the first control-plane slice:
 
 - `domain`
-  - Host, access policy, session, and overview models.
+  - Host, access policy, session, access request, and overview models.
 - `application`
-  - Read services for overview, assets, access policies, and sessions.
+  - Services for overview, assets, access policies, access requests, and sessions.
 - `interfaces/http`
-  - `/api/bastion/overview`, `/api/assets/hosts`, `/api/access-policies`, `/api/sessions`.
+  - `/api/bastion/overview`, `/api/assets/hosts`, `/api/access-policies`, `/api/access-requests`, `/api/sessions`.
 
 The gateway runtime currently uses a pragmatic login convention:
 
 - `principal#host`
 - `principal#host#account`
 
-It authenticates `principal` through the configured identity source, resolves `host` and optional `account` from bastion tables, and then opens a downstream SSH client connection.
+It authenticates `principal` through the configured identity source, resolves `host` and optional `account` from bastion tables, evaluates access policy, and then opens a downstream SSH client connection.
+Policies can currently target `user`, `principal`, `email`, `role`, or `*` subjects. When a matched policy requires approval, the gateway persists an access request and denies login until that request is approved.
 
 `internal/identity` resolves how authentication should be sourced:
 
@@ -79,7 +80,7 @@ Across system:
   - application services
   - persistence module imports
   - event bus integration where needed.
-- `internal/modules/bastion/module.go` wires overview, asset, policy, and session services.
+- `internal/modules/bastion/module.go` wires overview, asset, policy, access-request, access, and session services.
 - `internal/modules/iam/interfaces/http/module.go` wires IAM endpoints.
 - `internal/modules/bastion/interfaces/http/module.go` wires bastion endpoints.
 - `internal/api/module.go` aggregates endpoint slices into one `[]httpx.Endpoint`.
@@ -115,5 +116,5 @@ Planned next bounded contexts after this landing:
 Recommended runtime split:
 
 1. `cmd/server` remains the HTTP control plane.
-2. `cmd/gateway` now hosts the bastion listener scaffold and should evolve into the SSH server plus target connection proxy loop.
+2. `cmd/gateway` now hosts the bastion SSH server and target connection proxy loop.
 3. Both runtimes should share IAM, policy, and audit persistence modules.

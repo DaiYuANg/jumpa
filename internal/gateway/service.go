@@ -447,13 +447,18 @@ func (s *Service) newSSHServerConfig() (*ssh.ServerConfig, string, error) {
 				return nil, errors.New("access evaluation failed")
 			}
 			if !decision.Allowed {
+				reason := decision.Reason
+				if decision.RequestID != "" {
+					reason = fmt.Sprintf("%s (request: %s)", reason, decision.RequestID)
+				}
 				s.log.Warn("gateway access denied",
 					slog.String("principal", authn.Username),
 					slog.String("target_host", target.Host.Name),
 					slog.String("target_account", target.Login.AccountName),
 					slog.String("reason", decision.Reason),
+					slog.String("request_id", decision.RequestID),
 				)
-				return nil, errors.New(decision.Reason)
+				return nil, errors.New(reason)
 			}
 
 			return &ssh.Permissions{

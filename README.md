@@ -6,14 +6,14 @@ A bastion and jump-host control-plane backend based on the ArcGo ecosystem, orga
 
 - Multi-database support via config: `sqlite`, `mariadb`, `postgres`
 - Fiber-based HTTP runtime with `httpx` endpoint registration
-- Dedicated `cmd/gateway` runtime for the bastion SSH entrypoint scaffold
+- Dedicated `cmd/gateway` runtime for the bastion SSH entrypoint
 - JWT auth flow (`login`, `refresh`, `logout`, `me`) with revocation support
 - Valkey integration via `kvx` (including distributed scheduler lock use-cases)
 - Embedded SQL migrations and dedicated `cmd/migrate` process
 - Modular IAM architecture plus bastion scaffolding (`domain/application/interfaces`)
 - Identity-source abstraction for `local` and `os` login modes
 - OS identity planning for Linux PAM, Windows local/domain accounts, and macOS OpenDirectory
-- Bastion schema baseline for hosts, access policies, sessions, and command audit records
+- Bastion schema baseline for hosts, access policies, sessions, access requests, and command audit records
 
 ## Architecture Docs
 
@@ -97,6 +97,9 @@ Useful early bastion endpoints:
 - `GET /api/bastion/overview`
 - `GET /api/assets/hosts`
 - `GET /api/access-policies`
+- `GET /api/access-requests`
+- `POST /api/access-requests/{id}/approve`
+- `POST /api/access-requests/{id}/reject`
 - `GET /api/sessions`
 
 ## Common Commands
@@ -127,7 +130,7 @@ Build outputs (by default):
 ## Main Runtime Modules
 
 - `cmd/server`: app bootstrap and DI container startup
-- `cmd/gateway`: bastion SSH gateway runtime scaffold
+- `cmd/gateway`: bastion SSH gateway runtime
 - `cmd/migrate`: migration bootstrap
 - `internal/modules/iam`: IAM bounded context
 - `internal/modules/bastion`: bastion control-plane scaffolding
@@ -141,11 +144,12 @@ Build outputs (by default):
 ## Notes
 
 - Legacy `internal/service` and `internal/repo` layers were removed after DDD migration.
-- The SSH gateway currently exposes a listener scaffold and identity-provider abstraction; full SSH session proxying and OS-backed credential validation are the next implementation steps.
+- The SSH gateway now authenticates through the configured identity provider, resolves target hosts/accounts, enforces bastion access policies, and opens downstream SSH client connections.
 - `local` identity mode can already authenticate against the legacy `users` table when it contains bcrypt `password_hash` values.
 - `os` identity mode now has explicit Linux/Windows/macOS backend slots (`pam`, `winlogon`, `opendirectory`).
 - Linux PAM and macOS OpenDirectory paths are wired behind platform build tags. Linux requires cgo plus PAM headers and libraries; macOS requires cgo plus the OpenDirectory framework.
 - Windows `winlogon` authentication is wired through `LogonUserW`, with support for `DOMAIN\user`, `user@domain`, and local account forms.
-- The gateway now resolves target hosts and host accounts from `bastion_hosts` and `bastion_host_accounts`, then opens a downstream SSH client connection.
-- Access policy enforcement and session/audit persistence are still not wired into the live proxy path yet.
+- The gateway resolves target hosts and host accounts from `bastion_hosts` and `bastion_host_accounts`, then opens a downstream SSH client connection.
+- Access policy enforcement is wired into the live proxy path, with `subjectType` support for `user`, `principal`, `email`, `role`, and `*`.
+- Policies marked `approvalRequired=true` now create bastion access requests in `bastion_access_requests`; approved requests are reusable in the current minimal workflow.
 - Add new business capabilities under `internal/modules/*` in the same layered style.

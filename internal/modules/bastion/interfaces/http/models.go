@@ -70,6 +70,21 @@ type sessionDTO struct {
 	EndedAt       *time.Time `json:"endedAt,omitempty"`
 }
 
+type accessRequestDTO struct {
+	ID             string     `json:"id"`
+	PolicyID       string     `json:"policyId"`
+	PrincipalName  string     `json:"principalName"`
+	PrincipalEmail string     `json:"principalEmail,omitempty"`
+	HostName       string     `json:"hostName"`
+	HostAccount    string     `json:"hostAccount"`
+	Protocol       string     `json:"protocol"`
+	Status         string     `json:"status"`
+	RequestedAt    time.Time  `json:"requestedAt"`
+	ReviewedAt     *time.Time `json:"reviewedAt,omitempty"`
+	ReviewedBy     *string    `json:"reviewedBy,omitempty"`
+	ReviewComment  *string    `json:"reviewComment,omitempty"`
+}
+
 type createHostInput struct {
 	Body struct {
 		Name            string  `json:"name" validate:"required,min=1,max=128"`
@@ -155,5 +170,13 @@ type patchPolicyInput struct {
 		Protocol          *string `json:"protocol,omitempty" validate:"omitempty,min=1,max=32"`
 		ApprovalRequired  *bool   `json:"approvalRequired,omitempty"`
 		RecordingRequired *bool   `json:"recordingRequired,omitempty"`
+	} `json:"body"`
+}
+
+type reviewAccessRequestInput struct {
+	ID   string `path:"id" validate:"required"`
+	Body struct {
+		Reviewer string  `json:"reviewer" validate:"required,min=1,max=128"`
+		Comment  *string `json:"comment,omitempty" validate:"omitempty,max=500"`
 	} `json:"body"`
 }

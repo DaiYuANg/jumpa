@@ -9,13 +9,14 @@ import (
 var Module = dix.NewModule("bastion-http",
 	dix.WithModuleImports(bastion.Module),
 	dix.WithModuleProviders(
-		dix.Provider4(func(
+		dix.Provider5(func(
 			overviewSvc application.OverviewService,
 			assetSvc application.AssetService,
 			policySvc application.PolicyService,
+			requestSvc application.AccessRequestService,
 			sessionSvc application.SessionService,
 		) *BastionEndpoint {
-			return NewBastionEndpoint(overviewSvc, assetSvc, policySvc, sessionSvc)
+			return NewBastionEndpoint(overviewSvc, assetSvc, policySvc, requestSvc, sessionSvc)
 		}),
 	),
 )

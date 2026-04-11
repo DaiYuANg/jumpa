@@ -126,6 +126,21 @@ type SessionRecord struct {
 	EndedAt       *time.Time
 }
 
+type AccessRequestRecord struct {
+	ID             string
+	PolicyID       string
+	PrincipalName  string
+	PrincipalEmail *string
+	HostName       string
+	HostAccount    string
+	Protocol       string
+	Status         string
+	RequestedAt    time.Time
+	ReviewedAt     *time.Time
+	ReviewedBy     *string
+	ReviewComment  *string
+}
+
 type CreateSessionInput struct {
 	HostID        string
 	HostAccountID *string
@@ -141,6 +156,25 @@ type CreateSessionEventInput struct {
 	EventType string
 	Payload   *string
 	CreatedAt time.Time
+}
+
+type FindAccessRequestInput struct {
+	PolicyID       string
+	PrincipalName  string
+	PrincipalEmail *string
+	HostName       string
+	HostAccount    string
+	Protocol       string
+}
+
+type CreateAccessRequestInput struct {
+	PolicyID       string
+	PrincipalName  string
+	PrincipalEmail *string
+	HostName       string
+	HostAccount    string
+	Protocol       string
+	RequestedAt    time.Time
 }
 
 type HostRepository interface {
@@ -181,4 +215,12 @@ type SessionRepository interface {
 
 type SessionEventRepository interface {
 	CreateSessionEvent(ctx context.Context, in CreateSessionEventInput) error
+}
+
+type AccessRequestRepository interface {
+	ListRequests(ctx context.Context) ([]AccessRequestRecord, error)
+	GetRequestByID(ctx context.Context, id string) (mo.Option[AccessRequestRecord], error)
+	FindLatestRequest(ctx context.Context, in FindAccessRequestInput) (mo.Option[AccessRequestRecord], error)
+	CreateRequest(ctx context.Context, in CreateAccessRequestInput) (AccessRequestRecord, error)
+	UpdateRequestStatus(ctx context.Context, id, status string, reviewedAt time.Time, reviewedBy string, reviewComment *string) (mo.Option[AccessRequestRecord], error)
 }
