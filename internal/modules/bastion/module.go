@@ -30,8 +30,8 @@ var Module = dix.NewModule("bastion",
 		dix.Provider1(func(sessionRepo ports.SessionRepository) application.SessionService {
 			return application.NewSessionService(sessionRepo)
 		}),
-		dix.Provider1(func(accessRequestRepo ports.AccessRequestRepository) application.AccessRequestService {
-			return application.NewAccessRequestService(accessRequestRepo)
+		dix.Provider2(func(cfg config2.AppConfig, accessRequestRepo ports.AccessRequestRepository) application.AccessRequestService {
+			return application.NewAccessRequestService(cfg, accessRequestRepo)
 		}),
 		dix.Provider2(func(sessionRepo ports.SessionRepository, eventRepo ports.SessionEventRepository) application.SessionRuntimeService {
 			return application.NewSessionRuntimeService(sessionRepo, eventRepo)

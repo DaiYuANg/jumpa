@@ -388,18 +388,21 @@ func toSessionDTOs(items []bastiondomain.Session) []sessionDTO {
 func toAccessRequestDTOs(items []bastiondomain.AccessRequest) []accessRequestDTO {
 	return lo.Map(items, func(it bastiondomain.AccessRequest, _ int) accessRequestDTO {
 		return accessRequestDTO{
-			ID:             it.ID,
-			PolicyID:       it.PolicyID,
-			PrincipalName:  it.PrincipalName,
-			PrincipalEmail: it.PrincipalEmail,
-			HostName:       it.HostName,
-			HostAccount:    it.HostAccount,
-			Protocol:       it.Protocol,
-			Status:         it.Status,
-			RequestedAt:    it.RequestedAt,
-			ReviewedAt:     it.ReviewedAt,
-			ReviewedBy:     it.ReviewedBy,
-			ReviewComment:  it.ReviewComment,
+			ID:                it.ID,
+			PolicyID:          it.PolicyID,
+			PrincipalName:     it.PrincipalName,
+			PrincipalEmail:    it.PrincipalEmail,
+			HostName:          it.HostName,
+			HostAccount:       it.HostAccount,
+			Protocol:          it.Protocol,
+			Status:            it.Status,
+			RequestedAt:       it.RequestedAt,
+			ReviewedAt:        it.ReviewedAt,
+			ReviewedBy:        it.ReviewedBy,
+			ReviewComment:     it.ReviewComment,
+			ApprovedUntil:     it.ApprovedUntil,
+			ConsumedAt:        it.ConsumedAt,
+			ConsumedSessionID: it.ConsumedSessionID,
 		}
 	})
 }

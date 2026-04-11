@@ -127,18 +127,21 @@ type SessionRecord struct {
 }
 
 type AccessRequestRecord struct {
-	ID             string
-	PolicyID       string
-	PrincipalName  string
-	PrincipalEmail *string
-	HostName       string
-	HostAccount    string
-	Protocol       string
-	Status         string
-	RequestedAt    time.Time
-	ReviewedAt     *time.Time
-	ReviewedBy     *string
-	ReviewComment  *string
+	ID                string
+	PolicyID          string
+	PrincipalName     string
+	PrincipalEmail    *string
+	HostName          string
+	HostAccount       string
+	Protocol          string
+	Status            string
+	RequestedAt       time.Time
+	ReviewedAt        *time.Time
+	ReviewedBy        *string
+	ReviewComment     *string
+	ApprovedUntil     *time.Time
+	ConsumedAt        *time.Time
+	ConsumedSessionID *string
 }
 
 type CreateSessionInput struct {
@@ -222,5 +225,6 @@ type AccessRequestRepository interface {
 	GetRequestByID(ctx context.Context, id string) (mo.Option[AccessRequestRecord], error)
 	FindLatestRequest(ctx context.Context, in FindAccessRequestInput) (mo.Option[AccessRequestRecord], error)
 	CreateRequest(ctx context.Context, in CreateAccessRequestInput) (AccessRequestRecord, error)
-	UpdateRequestStatus(ctx context.Context, id, status string, reviewedAt time.Time, reviewedBy string, reviewComment *string) (mo.Option[AccessRequestRecord], error)
+	UpdateRequestStatus(ctx context.Context, id, status string, reviewedAt time.Time, reviewedBy string, reviewComment *string, approvedUntil *time.Time) (mo.Option[AccessRequestRecord], error)
+	ConsumeRequest(ctx context.Context, id string, consumedAt time.Time, consumedSessionID *string) (mo.Option[AccessRequestRecord], error)
 }

@@ -56,6 +56,7 @@ type AccessDecision struct {
 
 type AccessService interface {
 	Authorize(ctx context.Context, in AccessCheckInput) (AccessDecision, error)
+	ConsumeApprovedRequest(ctx context.Context, requestID, sessionID string) error
 }
 
 type CreateHostInput struct {

@@ -92,6 +92,12 @@ Target host credential conventions:
 - `credential_ref=env:VAR_NAME`: use the password stored in environment variable `VAR_NAME`
 - `credential_ref=file:/path/to/private_key`: use the private key file for downstream SSH auth
 
+Target host key verification:
+
+- `APP_BASTION_SSH_HOST_KEY_POLICY=insecure`: skip downstream host key verification
+- `APP_BASTION_SSH_HOST_KEY_POLICY=known_hosts`: verify downstream host keys against `APP_BASTION_SSH_KNOWN_HOSTS_PATH`
+- Production deployments should use `known_hosts`
+
 Useful early bastion endpoints:
 
 - `GET /api/bastion/overview`
@@ -101,6 +107,11 @@ Useful early bastion endpoints:
 - `POST /api/access-requests/{id}/approve`
 - `POST /api/access-requests/{id}/reject`
 - `GET /api/sessions`
+
+Approval workflow defaults:
+
+- Approved access requests expire after `APP_BASTION_ACCESS_APPROVAL_TTL_MIN` minutes
+- Approved access requests are consumed on the first successful SSH session start
 
 ## Common Commands
 

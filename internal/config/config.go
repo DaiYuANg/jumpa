@@ -49,6 +49,8 @@ type AppConfig struct {
 		SSH     struct {
 			ListenAddr       string `koanf:"listen_addr"`
 			HostKeyPath      string `koanf:"host_key_path"`
+			HostKeyPolicy    string `koanf:"host_key_policy"`
+			KnownHostsPath   string `koanf:"known_hosts_path"`
 			TrustedProxyCIDR string `koanf:"trusted_proxy_cidr"`
 		} `koanf:"ssh"`
 		Session struct {
@@ -56,6 +58,9 @@ type AppConfig struct {
 			MaxDurationMin     int    `koanf:"max_duration_min"`
 			RecordingDirectory string `koanf:"recording_directory"`
 		} `koanf:"session"`
+		Access struct {
+			ApprovalTTLMin int `koanf:"approval_ttl_min"`
+		} `koanf:"access"`
 	} `koanf:"bastion"`
 	Audit struct {
 		StoreCommandInput bool `koanf:"store_command_input"`

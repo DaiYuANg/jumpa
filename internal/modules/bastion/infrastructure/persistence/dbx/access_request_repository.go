@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/DaiYuANg/arcgo/collectionx"
@@ -14,34 +15,40 @@ import (
 )
 
 type accessRequestRow struct {
-	ID             int64      `dbx:"id"`
-	PolicyID       int64      `dbx:"policy_id"`
-	PrincipalName  string     `dbx:"principal_name"`
-	PrincipalEmail *string    `dbx:"principal_email"`
-	HostName       string     `dbx:"host_name"`
-	HostAccount    string     `dbx:"host_account"`
-	Protocol       string     `dbx:"protocol"`
-	Status         string     `dbx:"status"`
-	RequestedAt    time.Time  `dbx:"requested_at"`
-	ReviewedAt     *time.Time `dbx:"reviewed_at"`
-	ReviewedBy     *string    `dbx:"reviewed_by"`
-	ReviewComment  *string    `dbx:"review_comment"`
+	ID                int64      `dbx:"id"`
+	PolicyID          int64      `dbx:"policy_id"`
+	PrincipalName     string     `dbx:"principal_name"`
+	PrincipalEmail    *string    `dbx:"principal_email"`
+	HostName          string     `dbx:"host_name"`
+	HostAccount       string     `dbx:"host_account"`
+	Protocol          string     `dbx:"protocol"`
+	Status            string     `dbx:"status"`
+	RequestedAt       time.Time  `dbx:"requested_at"`
+	ReviewedAt        *time.Time `dbx:"reviewed_at"`
+	ReviewedBy        *string    `dbx:"reviewed_by"`
+	ReviewComment     *string    `dbx:"review_comment"`
+	ApprovedUntil     *time.Time `dbx:"approved_until"`
+	ConsumedAt        *time.Time `dbx:"consumed_at"`
+	ConsumedSessionID *int64     `dbx:"consumed_session_id"`
 }
 
 type accessRequestSchema struct {
 	dbx.Schema[accessRequestRow]
-	ID             dbx.IDColumn[accessRequestRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
-	PolicyID       dbx.Column[accessRequestRow, int64]                    `dbx:"policy_id"`
-	PrincipalName  dbx.Column[accessRequestRow, string]                   `dbx:"principal_name"`
-	PrincipalEmail dbx.Column[accessRequestRow, *string]                  `dbx:"principal_email"`
-	HostName       dbx.Column[accessRequestRow, string]                   `dbx:"host_name"`
-	HostAccount    dbx.Column[accessRequestRow, string]                   `dbx:"host_account"`
-	Protocol       dbx.Column[accessRequestRow, string]                   `dbx:"protocol"`
-	Status         dbx.Column[accessRequestRow, string]                   `dbx:"status"`
-	RequestedAt    dbx.Column[accessRequestRow, time.Time]                `dbx:"requested_at"`
-	ReviewedAt     dbx.Column[accessRequestRow, *time.Time]               `dbx:"reviewed_at"`
-	ReviewedBy     dbx.Column[accessRequestRow, *string]                  `dbx:"reviewed_by"`
-	ReviewComment  dbx.Column[accessRequestRow, *string]                  `dbx:"review_comment"`
+	ID                dbx.IDColumn[accessRequestRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
+	PolicyID          dbx.Column[accessRequestRow, int64]                    `dbx:"policy_id"`
+	PrincipalName     dbx.Column[accessRequestRow, string]                   `dbx:"principal_name"`
+	PrincipalEmail    dbx.Column[accessRequestRow, *string]                  `dbx:"principal_email"`
+	HostName          dbx.Column[accessRequestRow, string]                   `dbx:"host_name"`
+	HostAccount       dbx.Column[accessRequestRow, string]                   `dbx:"host_account"`
+	Protocol          dbx.Column[accessRequestRow, string]                   `dbx:"protocol"`
+	Status            dbx.Column[accessRequestRow, string]                   `dbx:"status"`
+	RequestedAt       dbx.Column[accessRequestRow, time.Time]                `dbx:"requested_at"`
+	ReviewedAt        dbx.Column[accessRequestRow, *time.Time]               `dbx:"reviewed_at"`
+	ReviewedBy        dbx.Column[accessRequestRow, *string]                  `dbx:"reviewed_by"`
+	ReviewComment     dbx.Column[accessRequestRow, *string]                  `dbx:"review_comment"`
+	ApprovedUntil     dbx.Column[accessRequestRow, *time.Time]               `dbx:"approved_until"`
+	ConsumedAt        dbx.Column[accessRequestRow, *time.Time]               `dbx:"consumed_at"`
+	ConsumedSessionID dbx.Column[accessRequestRow, *int64]                   `dbx:"consumed_session_id"`
 }
 
 type accessRequestRepo struct {
@@ -126,7 +133,7 @@ func (r *accessRequestRepo) CreateRequest(ctx context.Context, in ports.CreateAc
 	return toAccessRequestRecord(*row), nil
 }
 
-func (r *accessRequestRepo) UpdateRequestStatus(ctx context.Context, id, status string, reviewedAt time.Time, reviewedBy string, reviewComment *string) (mo.Option[ports.AccessRequestRecord], error) {
+func (r *accessRequestRepo) UpdateRequestStatus(ctx context.Context, id, status string, reviewedAt time.Time, reviewedBy string, reviewComment *string, approvedUntil *time.Time) (mo.Option[ports.AccessRequestRecord], error) {
 	requestID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return mo.None[ports.AccessRequestRecord](), err
@@ -136,6 +143,38 @@ func (r *accessRequestRepo) UpdateRequestStatus(ctx context.Context, id, status 
 		r.ars.ReviewedAt.Set(&reviewedAt),
 		r.ars.ReviewedBy.Set(&reviewedBy),
 		r.ars.ReviewComment.Set(reviewComment),
+		r.ars.ApprovedUntil.Set(approvedUntil),
+		r.ars.ConsumedAt.Set(nil),
+		r.ars.ConsumedSessionID.Set(nil),
+	}
+	res, err := r.repo.UpdateByID(ctx, requestID, assignments...)
+	if err != nil {
+		return mo.None[ports.AccessRequestRecord](), err
+	}
+	ra, _ := res.RowsAffected()
+	if ra == 0 {
+		return mo.None[ports.AccessRequestRecord](), nil
+	}
+	return r.GetRequestByID(ctx, id)
+}
+
+func (r *accessRequestRepo) ConsumeRequest(ctx context.Context, id string, consumedAt time.Time, consumedSessionID *string) (mo.Option[ports.AccessRequestRecord], error) {
+	requestID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return mo.None[ports.AccessRequestRecord](), err
+	}
+	var consumedSessionIDInt *int64
+	if consumedSessionID != nil && strings.TrimSpace(*consumedSessionID) != "" {
+		value, parseErr := strconv.ParseInt(strings.TrimSpace(*consumedSessionID), 10, 64)
+		if parseErr != nil {
+			return mo.None[ports.AccessRequestRecord](), parseErr
+		}
+		consumedSessionIDInt = &value
+	}
+	assignments := []dbx.Assignment{
+		r.ars.Status.Set("consumed"),
+		r.ars.ConsumedAt.Set(&consumedAt),
+		r.ars.ConsumedSessionID.Set(consumedSessionIDInt),
 	}
 	res, err := r.repo.UpdateByID(ctx, requestID, assignments...)
 	if err != nil {
@@ -150,17 +189,28 @@ func (r *accessRequestRepo) UpdateRequestStatus(ctx context.Context, id, status 
 
 func toAccessRequestRecord(row accessRequestRow) ports.AccessRequestRecord {
 	return ports.AccessRequestRecord{
-		ID:             strconv.FormatInt(row.ID, 10),
-		PolicyID:       strconv.FormatInt(row.PolicyID, 10),
-		PrincipalName:  row.PrincipalName,
-		PrincipalEmail: row.PrincipalEmail,
-		HostName:       row.HostName,
-		HostAccount:    row.HostAccount,
-		Protocol:       row.Protocol,
-		Status:         row.Status,
-		RequestedAt:    row.RequestedAt,
-		ReviewedAt:     row.ReviewedAt,
-		ReviewedBy:     row.ReviewedBy,
-		ReviewComment:  row.ReviewComment,
+		ID:                strconv.FormatInt(row.ID, 10),
+		PolicyID:          strconv.FormatInt(row.PolicyID, 10),
+		PrincipalName:     row.PrincipalName,
+		PrincipalEmail:    row.PrincipalEmail,
+		HostName:          row.HostName,
+		HostAccount:       row.HostAccount,
+		Protocol:          row.Protocol,
+		Status:            row.Status,
+		RequestedAt:       row.RequestedAt,
+		ReviewedAt:        row.ReviewedAt,
+		ReviewedBy:        row.ReviewedBy,
+		ReviewComment:     row.ReviewComment,
+		ApprovedUntil:     row.ApprovedUntil,
+		ConsumedAt:        row.ConsumedAt,
+		ConsumedSessionID: formatInt64Ptr(row.ConsumedSessionID),
 	}
+}
+
+func formatInt64Ptr(v *int64) *string {
+	if v == nil {
+		return nil
+	}
+	value := strconv.FormatInt(*v, 10)
+	return &value
 }

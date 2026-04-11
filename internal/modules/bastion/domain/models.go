@@ -55,18 +55,21 @@ type Session struct {
 }
 
 type AccessRequest struct {
-	ID             string     `json:"id"`
-	PolicyID       string     `json:"policyId"`
-	PrincipalName  string     `json:"principalName"`
-	PrincipalEmail string     `json:"principalEmail,omitempty"`
-	HostName       string     `json:"hostName"`
-	HostAccount    string     `json:"hostAccount"`
-	Protocol       string     `json:"protocol"`
-	Status         string     `json:"status"`
-	RequestedAt    time.Time  `json:"requestedAt"`
-	ReviewedAt     *time.Time `json:"reviewedAt,omitempty"`
-	ReviewedBy     *string    `json:"reviewedBy,omitempty"`
-	ReviewComment  *string    `json:"reviewComment,omitempty"`
+	ID                string     `json:"id"`
+	PolicyID          string     `json:"policyId"`
+	PrincipalName     string     `json:"principalName"`
+	PrincipalEmail    string     `json:"principalEmail,omitempty"`
+	HostName          string     `json:"hostName"`
+	HostAccount       string     `json:"hostAccount"`
+	Protocol          string     `json:"protocol"`
+	Status            string     `json:"status"`
+	RequestedAt       time.Time  `json:"requestedAt"`
+	ReviewedAt        *time.Time `json:"reviewedAt,omitempty"`
+	ReviewedBy        *string    `json:"reviewedBy,omitempty"`
+	ReviewComment     *string    `json:"reviewComment,omitempty"`
+	ApprovedUntil     *time.Time `json:"approvedUntil,omitempty"`
+	ConsumedAt        *time.Time `json:"consumedAt,omitempty"`
+	ConsumedSessionID *string    `json:"consumedSessionId,omitempty"`
 }
 
 type Overview struct {

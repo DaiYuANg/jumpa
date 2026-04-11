@@ -43,6 +43,7 @@ type sessionService struct {
 	eventRepo   ports.SessionEventRepository
 }
 type accessRequestService struct {
+	cfg  config2.AppConfig
 	repo ports.AccessRequestRepository
 }
 
@@ -74,8 +75,8 @@ func NewSessionRuntimeService(sessionRepo ports.SessionRepository, eventRepo por
 	return &sessionService{sessionRepo: sessionRepo, eventRepo: eventRepo}
 }
 
-func NewAccessRequestService(repo ports.AccessRequestRepository) AccessRequestService {
-	return &accessRequestService{repo: repo}
+func NewAccessRequestService(cfg config2.AppConfig, repo ports.AccessRequestRepository) AccessRequestService {
+	return &accessRequestService{cfg: cfg, repo: repo}
 }
 
 func (s *overviewService) Get(_ context.Context) (bastiondomain.Overview, error) {
@@ -387,7 +388,7 @@ func (s *accessService) Authorize(ctx context.Context, in AccessCheckInput) (Acc
 		if requestErr != nil {
 			return AccessDecision{}, requestErr
 		}
-		if strings.EqualFold(request.Status, "approved") {
+		if isAccessRequestApprovedUsable(time.Now().UTC(), request) {
 			return AccessDecision{
 				Allowed:           true,
 				ApprovalRequired:  false,
@@ -437,7 +438,8 @@ func (s *accessRequestService) GetRequest(ctx context.Context, id string) (mo.Op
 }
 
 func (s *accessRequestService) Approve(ctx context.Context, id, reviewer string, comment *string) (mo.Option[bastiondomain.AccessRequest], error) {
-	item, err := s.repo.UpdateRequestStatus(ctx, id, "approved", time.Now().UTC(), strings.TrimSpace(reviewer), normalizeOptionalString(comment))
+	approvedUntil := approvalExpiry(time.Now().UTC(), s.cfg)
+	item, err := s.repo.UpdateRequestStatus(ctx, id, "approved", time.Now().UTC(), strings.TrimSpace(reviewer), normalizeOptionalString(comment), approvedUntil)
 	if err != nil || item.IsAbsent() {
 		return mo.None[bastiondomain.AccessRequest](), err
 	}
@@ -445,11 +447,41 @@ func (s *accessRequestService) Approve(ctx context.Context, id, reviewer string,
 }
 
 func (s *accessRequestService) Reject(ctx context.Context, id, reviewer string, comment *string) (mo.Option[bastiondomain.AccessRequest], error) {
-	item, err := s.repo.UpdateRequestStatus(ctx, id, "rejected", time.Now().UTC(), strings.TrimSpace(reviewer), normalizeOptionalString(comment))
+	item, err := s.repo.UpdateRequestStatus(ctx, id, "rejected", time.Now().UTC(), strings.TrimSpace(reviewer), normalizeOptionalString(comment), nil)
 	if err != nil || item.IsAbsent() {
 		return mo.None[bastiondomain.AccessRequest](), err
 	}
 	return mo.Some(toDomainAccessRequest(item.MustGet())), nil
+}
+
+func (s *accessService) ConsumeApprovedRequest(ctx context.Context, requestID, sessionID string) error {
+	if strings.TrimSpace(requestID) == "" {
+		return nil
+	}
+	item, err := s.accessRequestRepo.GetRequestByID(ctx, requestID)
+	if err != nil {
+		return err
+	}
+	if item.IsAbsent() {
+		return fmt.Errorf("access request %q not found", requestID)
+	}
+	request := item.MustGet()
+	if !isAccessRequestApprovedUsable(time.Now().UTC(), request) {
+		return fmt.Errorf("access request %q is not usable", requestID)
+	}
+	sessionID = strings.TrimSpace(sessionID)
+	var consumedSessionID *string
+	if sessionID != "" {
+		consumedSessionID = &sessionID
+	}
+	updated, err := s.accessRequestRepo.ConsumeRequest(ctx, requestID, time.Now().UTC(), consumedSessionID)
+	if err != nil {
+		return err
+	}
+	if updated.IsAbsent() {
+		return fmt.Errorf("access request %q could not be consumed", requestID)
+	}
+	return nil
 }
 
 func (s *sessionService) Start(ctx context.Context, in StartSessionInput) (bastiondomain.Session, error) {
@@ -525,18 +557,21 @@ func toDomainSession(it ports.SessionRecord) bastiondomain.Session {
 
 func toDomainAccessRequest(it ports.AccessRequestRecord) bastiondomain.AccessRequest {
 	return bastiondomain.AccessRequest{
-		ID:             it.ID,
-		PolicyID:       it.PolicyID,
-		PrincipalName:  it.PrincipalName,
-		PrincipalEmail: valueOrEmpty(it.PrincipalEmail),
-		HostName:       it.HostName,
-		HostAccount:    it.HostAccount,
-		Protocol:       it.Protocol,
-		Status:         it.Status,
-		RequestedAt:    it.RequestedAt,
-		ReviewedAt:     it.ReviewedAt,
-		ReviewedBy:     it.ReviewedBy,
-		ReviewComment:  it.ReviewComment,
+		ID:                it.ID,
+		PolicyID:          it.PolicyID,
+		PrincipalName:     it.PrincipalName,
+		PrincipalEmail:    valueOrEmpty(it.PrincipalEmail),
+		HostName:          it.HostName,
+		HostAccount:       it.HostAccount,
+		Protocol:          it.Protocol,
+		Status:            it.Status,
+		RequestedAt:       it.RequestedAt,
+		ReviewedAt:        it.ReviewedAt,
+		ReviewedBy:        it.ReviewedBy,
+		ReviewComment:     it.ReviewComment,
+		ApprovedUntil:     it.ApprovedUntil,
+		ConsumedAt:        it.ConsumedAt,
+		ConsumedSessionID: it.ConsumedSessionID,
 	}
 }
 
@@ -622,7 +657,11 @@ func (s *accessService) ensureAccessRequest(ctx context.Context, policy ports.Ac
 		return ports.AccessRequestRecord{}, err
 	}
 	if request.IsPresent() {
-		return request.MustGet(), nil
+		current := request.MustGet()
+		now := time.Now().UTC()
+		if strings.EqualFold(current.Status, "pending") || isAccessRequestApprovedUsable(now, current) {
+			return current, nil
+		}
 	}
 
 	return s.accessRequestRepo.CreateRequest(ctx, ports.CreateAccessRequestInput{
@@ -634,6 +673,28 @@ func (s *accessService) ensureAccessRequest(ctx context.Context, policy ports.Ac
 		Protocol:       in.Protocol,
 		RequestedAt:    time.Now().UTC(),
 	})
+}
+
+func approvalExpiry(now time.Time, cfg config2.AppConfig) *time.Time {
+	ttlMin := cfg.Bastion.Access.ApprovalTTLMin
+	if ttlMin <= 0 {
+		return nil
+	}
+	expiresAt := now.Add(time.Duration(ttlMin) * time.Minute)
+	return &expiresAt
+}
+
+func isAccessRequestApprovedUsable(now time.Time, request ports.AccessRequestRecord) bool {
+	if !strings.EqualFold(request.Status, "approved") {
+		return false
+	}
+	if request.ConsumedAt != nil {
+		return false
+	}
+	if request.ApprovedUntil != nil && now.After(*request.ApprovedUntil) {
+		return false
+	}
+	return true
 }
 
 func normalizeOptionalString(v *string) *string {

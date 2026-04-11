@@ -20,6 +20,7 @@ import (
 	bastiondomain "github.com/DaiYuANg/jumpa/internal/modules/bastion/domain"
 	"github.com/samber/mo"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 const sshServerVersion = "SSH-2.0-jumpa"
@@ -32,8 +33,9 @@ type Service struct {
 	accessSvc     application.AccessService
 	sessionSvc    application.SessionRuntimeService
 
-	mu       sync.Mutex
-	listener net.Listener
+	mu                    sync.Mutex
+	listener              net.Listener
+	targetHostKeyCallback ssh.HostKeyCallback
 }
 
 type execRequest struct {
@@ -95,6 +97,10 @@ func (s *Service) Start(_ context.Context) error {
 	if err != nil {
 		return err
 	}
+	targetHostKeyCallback, err := s.newTargetHostKeyCallback()
+	if err != nil {
+		return err
+	}
 
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -103,6 +109,7 @@ func (s *Service) Start(_ context.Context) error {
 
 	s.mu.Lock()
 	s.listener = ln
+	s.targetHostKeyCallback = targetHostKeyCallback
 	s.mu.Unlock()
 
 	descriptor := s.authenticator.Descriptor()
@@ -111,6 +118,7 @@ func (s *Service) Start(_ context.Context) error {
 		slog.String("identity_provider", descriptor.Kind),
 		slog.String("identity_backend", descriptor.Backend),
 		slog.String("host_key_source", hostKeySource),
+		slog.String("target_host_key_policy", normalizedHostKeyPolicy(s.cfg)),
 		slog.Bool("password_auth_enabled", s.authenticator.SupportsPassword()),
 	)
 
@@ -278,6 +286,14 @@ func (s *Service) handleSessionChannel(serverConn *ssh.ServerConn, newChannel ss
 		s.failGatewaySession(bastionSession.ID, "invalid_session_request", errors.New("no shell, exec, or subsystem request received"))
 		s.writeProxyError(channel, errors.New("no shell, exec, or subsystem request received"))
 		return
+	}
+	if requestID := strings.TrimSpace(serverConn.Permissions.Extensions["request_id"]); requestID != "" {
+		if err := s.accessSvc.ConsumeApprovedRequest(context.Background(), requestID, bastionSession.ID); err != nil {
+			_ = session.Close()
+			s.failGatewaySession(bastionSession.ID, "request_consume_failed", err)
+			s.writeProxyError(channel, errors.New("approved access request could not be consumed"))
+			return
+		}
 	}
 
 	if err := s.sessionSvc.MarkActive(context.Background(), bastionSession.ID); err != nil {
@@ -467,6 +483,7 @@ func (s *Service) newSSHServerConfig() (*ssh.ServerConfig, string, error) {
 					"provider":           authn.Provider.Kind,
 					"backend":            authn.Provider.Backend,
 					"policy_id":          decision.MatchedPolicyID,
+					"request_id":         decision.RequestID,
 					"recording_required": strconv.FormatBool(decision.RecordingRequired),
 					"target_host_id":     target.Host.ID,
 					"target_host":        target.Host.Name,
@@ -573,6 +590,14 @@ func targetAccountIDPtr(target connectionTarget) *string {
 	return nil
 }
 
+func normalizedHostKeyPolicy(cfg config2.AppConfig) string {
+	policy := strings.ToLower(strings.TrimSpace(cfg.Bastion.SSH.HostKeyPolicy))
+	if policy == "" {
+		return "insecure"
+	}
+	return policy
+}
+
 func stringAttribute(authn identity.Authentication, key string) string {
 	if authn.Attributes == nil {
 		return ""
@@ -638,15 +663,36 @@ func (s *Service) openTargetClient(target connectionTarget, loginPassword string
 	if err != nil {
 		return nil, err
 	}
+	s.mu.Lock()
+	hostKeyCallback := s.targetHostKeyCallback
+	s.mu.Unlock()
+	if hostKeyCallback == nil {
+		return nil, errors.New("target host key callback is not initialized")
+	}
 
 	cfg := &ssh.ClientConfig{
 		User:            target.Login.AccountName,
 		Auth:            []ssh.AuthMethod{authMethod},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: hostKeyCallback,
 	}
 
 	address := net.JoinHostPort(target.Host.Address, strconv.Itoa(target.Host.Port))
 	return ssh.Dial("tcp", address, cfg)
+}
+
+func (s *Service) newTargetHostKeyCallback() (ssh.HostKeyCallback, error) {
+	switch normalizedHostKeyPolicy(s.cfg) {
+	case "insecure":
+		return ssh.InsecureIgnoreHostKey(), nil
+	case "known_hosts":
+		path := strings.TrimSpace(s.cfg.Bastion.SSH.KnownHostsPath)
+		if path == "" {
+			return nil, errors.New("known_hosts policy requires bastion.ssh.known_hosts_path")
+		}
+		return knownhosts.New(path)
+	default:
+		return nil, fmt.Errorf("unsupported bastion ssh host key policy %q", s.cfg.Bastion.SSH.HostKeyPolicy)
+	}
 }
 
 func (s *Service) resolveTargetAuthMethod(target connectionTarget, loginPassword string) (ssh.AuthMethod, error) {

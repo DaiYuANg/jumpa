@@ -51,11 +51,15 @@ bastion:
   ssh:
     listen_addr: ":2222"
     host_key_path: "./secrets/ssh_host_ed25519_key"
+    host_key_policy: "insecure"
+    known_hosts_path: "./secrets/known_hosts"
     trusted_proxy_cidr: ""
   session:
     idle_timeout_min: 15
     max_duration_min: 480
     recording_directory: "./data/recordings"
+  access:
+    approval_ttl_min: 30
 
 audit:
   store_command_input: true
