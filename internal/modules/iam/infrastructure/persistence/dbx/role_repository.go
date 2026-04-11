@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
+	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
-	"github.com/samber/lo"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 	"github.com/samber/mo"
 )
 
@@ -37,39 +37,40 @@ type rolePermissionGroupSchema struct {
 }
 
 type roleRepo struct {
-	session  dbx.Session
-	rs       roleSchema
-	mapper   dbx.Mapper[roleRow]
+	session dbx.Session
+	rs      roleSchema
+	mapper  dbx.Mapper[roleRow]
 }
 
 func NewRoleRepository(session dbx.Session) ports.RoleRepository {
 	rs := dbx.MustSchema("app_roles", roleSchema{})
 	return &roleRepo{
 		session: session,
-		rs:     rs,
-		mapper: dbx.MustMapper[roleRow](rs),
+		rs:      rs,
+		mapper:  dbx.MustMapper[roleRow](rs),
 	}
 }
 
 func (r *roleRepo) ListRoles(ctx context.Context) ([]ports.RoleRecord, error) {
-	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns()...).From(r.rs).OrderBy(r.rs.ID.Asc()), r.mapper)
+	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns().Values()...).From(r.rs).OrderBy(r.rs.ID.Asc()), r.mapper)
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row roleRow, _ int) ports.RoleRecord {
+	return collectionx.MapList(rows, func(_ int, row roleRow) ports.RoleRecord {
 		return ports.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}
-	}), nil
+	}).Values(), nil
 }
 
 func (r *roleRepo) GetRole(ctx context.Context, id string) (mo.Option[ports.RoleRecord], error) {
-	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns()...).From(r.rs).Where(r.rs.ID.Eq(id)), r.mapper)
+	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns().Values()...).From(r.rs).Where(r.rs.ID.Eq(id)), r.mapper)
 	if err != nil {
 		return mo.None[ports.RoleRecord](), err
 	}
-	if len(rows) == 0 {
+	rowOpt := rows.GetFirstOption()
+	if rowOpt.IsAbsent() {
 		return mo.None[ports.RoleRecord](), nil
 	}
-	row := rows[0]
+	row := rowOpt.MustGet()
 	return mo.Some(ports.RoleRecord{ID: row.ID, Name: row.Name, Description: row.Description, CreatedAt: row.CreatedAt}), nil
 }
 
@@ -115,4 +116,3 @@ func (r *roleRepo) DeleteRole(ctx context.Context, id string) (bool, error) {
 	ra, _ := res.RowsAffected()
 	return ra > 0, nil
 }
-

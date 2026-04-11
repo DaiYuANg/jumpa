@@ -1,17 +1,20 @@
 # Architecture Overview
 
-This project uses a DDD-style modular architecture centered on the `iam` bounded context.
+This project uses a DDD-style modular architecture for a bastion and jump-host control plane. The current codebase keeps `iam` as a bounded context and introduces `bastion` scaffolding for assets, access policies, and sessions.
 
 ## High-level Structure
 
 - `cmd/server`: server bootstrap and container startup.
+- `cmd/gateway`: bastion SSH gateway bootstrap.
 - `cmd/migrate`: migration entrypoint (embedded SQL migrations).
 - `internal/modules/iam`: core IAM domain module.
+- `internal/modules/bastion`: bastion control-plane scaffolding.
+- `internal/identity`: identity source resolution for application-managed and OS-backed login modes.
 - `internal/api`: API aggregation for system/auth/dashboard and module endpoint composition.
 - `internal/http`: Fiber + Huma server runtime and authz middleware wiring.
 - `internal/{config,db,kv,scheduler,event,auth,schema}`: platform and cross-cutting modules.
 
-## IAM Module Layout
+## Bounded Contexts
 
 `internal/modules/iam` is split by DDD layers:
 
@@ -27,13 +30,42 @@ This project uses a DDD-style modular architecture centered on the `iam` bounded
   - IAM HTTP endpoints, DTOs, mapping, paging/response helpers.
   - Registers IAM routes via `httpx.Endpoint`.
 
+`internal/modules/bastion` currently provides the first control-plane slice:
+
+- `domain`
+  - Host, access policy, session, and overview models.
+- `application`
+  - Read services for overview, assets, access policies, and sessions.
+- `interfaces/http`
+  - `/api/bastion/overview`, `/api/assets/hosts`, `/api/access-policies`, `/api/sessions`.
+
+The gateway runtime currently uses a pragmatic login convention:
+
+- `principal#host`
+- `principal#host#account`
+
+It authenticates `principal` through the configured identity source, resolves `host` and optional `account` from bastion tables, and then opens a downstream SSH client connection.
+
+`internal/identity` resolves how authentication should be sourced:
+
+- `local`
+  - Users and credentials are managed in the application database.
+- `os`
+  - Authentication is delegated to Linux PAM, Windows local/domain accounts, or macOS OpenDirectory, while bastion authorization remains application-owned.
+  - Linux PAM and macOS OpenDirectory are modeled as platform-native backends behind build tags; Windows uses a native `LogonUserW` backend.
+
 ## Dependency Direction
 
-Within IAM:
+Within IAM and bastion:
 
 - `interfaces/http` -> `application` -> `infrastructure/persistence` -> `dbx/sql`
 - `application` -> `domain`
 - `domain` has no dependency on infrastructure or transport.
+
+For identity:
+
+- `internal/identity` depends on config only.
+- Authentication source selection is independent from bastion authorization and audit persistence.
 
 Across system:
 
@@ -47,7 +79,9 @@ Across system:
   - application services
   - persistence module imports
   - event bus integration where needed.
+- `internal/modules/bastion/module.go` wires overview, asset, policy, and session services.
 - `internal/modules/iam/interfaces/http/module.go` wires IAM endpoints.
+- `internal/modules/bastion/interfaces/http/module.go` wires bastion endpoints.
 - `internal/api/module.go` aggregates endpoint slices into one `[]httpx.Endpoint`.
 
 ## API Response Conventions
@@ -58,8 +92,8 @@ Across system:
 
 ## Migration Notes
 
-The legacy `internal/service` and `internal/repo` layers were removed and replaced by IAM module layers.
-All new business features should be added under `internal/modules/iam` (or new bounded contexts with the same style), not reintroduced into removed legacy paths.
+The legacy `internal/service` and `internal/repo` layers were removed and replaced by module layers.
+New business features should be added under `internal/modules/*` with the same dependency direction, not reintroduced into removed legacy paths.
 
 ## Extension Guidelines
 
@@ -71,11 +105,15 @@ When adding new business capabilities:
 4. Add transport DTO + endpoint wiring in `interfaces/http`.
 5. Register providers in module files and expose endpoint slices through API aggregation.
 
-When adding another bounded context (example: `audit`), mirror the IAM folder shape:
+Planned next bounded contexts after this landing:
 
-- `internal/modules/audit/domain`
-- `internal/modules/audit/application`
-- `internal/modules/audit/infrastructure`
-- `internal/modules/audit/interfaces/http`
+- `internal/modules/assets`
+- `internal/modules/access`
+- `internal/modules/session`
+- `internal/modules/audit`
 
-Keep the same dependency direction and DI composition pattern.
+Recommended runtime split:
+
+1. `cmd/server` remains the HTTP control plane.
+2. `cmd/gateway` now hosts the bastion listener scaffold and should evolve into the SSH server plus target connection proxy loop.
+3. Both runtimes should share IAM, policy, and audit persistence modules.

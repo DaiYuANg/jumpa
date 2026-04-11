@@ -3,9 +3,9 @@ package dbx
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 
 type authPrincipalRow struct {
@@ -31,8 +31,8 @@ type authPrincipalRoleSchema struct {
 }
 
 type authPrincipalRepo struct {
-	aps              authPrincipalSchema
-	apr              authPrincipalRoleSchema
+	aps               authPrincipalSchema
+	apr               authPrincipalRoleSchema
 	principalRepo     *repository.Base[authPrincipalRow, authPrincipalSchema]
 	principalRoleRepo *repository.Base[authPrincipalRoleRow, authPrincipalRoleSchema]
 }
@@ -77,4 +77,3 @@ func (r *authPrincipalRepo) SetAuthPrincipalRoles(ctx context.Context, userID in
 	}
 	return nil
 }
-

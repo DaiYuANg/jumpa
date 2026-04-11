@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
+	iamdomain "github.com/DaiYuANg/jumpa/internal/modules/iam/domain"
 	"github.com/samber/mo"
 )
 
@@ -123,4 +123,3 @@ type AuthPrincipalRepository interface {
 	DeleteAuthPrincipal(ctx context.Context, userID int64) error
 	SetAuthPrincipalRoles(ctx context.Context, userID int64, roleIDs []string) error
 }
-

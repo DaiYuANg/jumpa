@@ -3,12 +3,12 @@ package iam
 import (
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/event"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/application"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence/wire"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/eventx"
+	"github.com/DaiYuANg/jumpa/internal/event"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/application"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/infrastructure/persistence/wire"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 
 var Module = dix.NewModule("iam",

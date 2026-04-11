@@ -3,8 +3,8 @@ package http
 import (
 	"strconv"
 
-	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
-	"github.com/DaiYuANg/arcgo-rbac-template/pkg"
+	iamdomain "github.com/DaiYuANg/jumpa/internal/modules/iam/domain"
+	"github.com/DaiYuANg/jumpa/pkg"
 	"github.com/samber/lo"
 )
 

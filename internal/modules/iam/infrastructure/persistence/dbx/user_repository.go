@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/schema"
+	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
-	"github.com/samber/lo"
+	iamdomain "github.com/DaiYuANg/jumpa/internal/modules/iam/domain"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
+	"github.com/DaiYuANg/jumpa/internal/schema"
 	"github.com/samber/mo"
 )
 
@@ -49,9 +49,9 @@ func (r *userRepo) List(ctx context.Context, search string, limit, offset int) (
 	if err != nil {
 		return nil, 0, err
 	}
-	users := lo.Map(rows, func(row UserRow, _ int) iamdomain.User {
+	users := collectionx.MapList(rows, func(_ int, row UserRow) iamdomain.User {
 		return iamdomain.User{ID: row.ID, Name: row.Name, Email: row.Email, Age: row.Age, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
-	})
+	}).Values()
 	return users, int(total), nil
 }
 
@@ -113,4 +113,3 @@ func (r *userRepo) Delete(ctx context.Context, id int64) (bool, error) {
 	ra, _ := res.RowsAffected()
 	return ra > 0, nil
 }
-

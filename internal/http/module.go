@@ -5,17 +5,18 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/api"
-	auth2 "github.com/DaiYuANg/arcgo-rbac-template/internal/auth"
-	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
-	"github.com/DaiYuANg/arcgo-rbac-template/pkg"
 	"github.com/DaiYuANg/arcgo/authx"
 	authhttp "github.com/DaiYuANg/arcgo/authx/http"
+	"github.com/DaiYuANg/arcgo/collectionx"
 	collectionset "github.com/DaiYuANg/arcgo/collectionx/set"
 	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/httpx"
 	"github.com/DaiYuANg/arcgo/httpx/adapter"
 	"github.com/DaiYuANg/arcgo/httpx/adapter/fiber"
+	"github.com/DaiYuANg/jumpa/internal/api"
+	auth2 "github.com/DaiYuANg/jumpa/internal/auth"
+	config2 "github.com/DaiYuANg/jumpa/internal/config"
+	"github.com/DaiYuANg/jumpa/pkg"
 	"github.com/go-playground/validator/v10"
 	fiberapp "github.com/gofiber/fiber/v2"
 	fiberlogger "github.com/gofiber/fiber/v2/middleware/logger"
@@ -112,10 +113,10 @@ func buildAuthMiddleware(engine *authx.Engine, policy AuthzPolicyConfig) fiberap
 			Principal: check.Principal,
 			Resource:  resource,
 			Action:    action,
-			Context: map[string]any{
+			Context: collectionx.NewMapFrom(map[string]any{
 				"path":   path,
 				"method": c.Method(),
-			},
+			}),
 		})
 		if canErr != nil {
 			return c.Status(500).JSON(map[string]string{"message": authhttp.ErrorMessage(canErr)})

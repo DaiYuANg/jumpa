@@ -6,15 +6,15 @@ import (
 	"strings"
 	"time"
 
-	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
-	db2 "github.com/DaiYuANg/arcgo-rbac-template/internal/db"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/kv"
 	"github.com/DaiYuANg/arcgo/authx"
+	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/kvx"
+	config2 "github.com/DaiYuANg/jumpa/internal/config"
+	db2 "github.com/DaiYuANg/jumpa/internal/db"
+	"github.com/DaiYuANg/jumpa/internal/kv"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/samber/lo"
 	"github.com/samber/mo"
 )
 
@@ -76,32 +76,33 @@ func principalFromDB(ctx context.Context, db *dbx.DB, email string) (mo.Option[a
 	prs := dbx.MustSchema("app_auth_principal_roles", authPrincipalRoleSchema{})
 	pps := dbx.MustSchema("app_auth_principal_permissions", authPrincipalPermissionSchema{})
 	rows, err := dbx.QueryAll[authPrincipalRow](ctx, db,
-		dbx.Select(ps.AllColumns()...).From(ps).Where(ps.Email.Eq(strings.ToLower(strings.TrimSpace(email)))),
+		dbx.Select(ps.AllColumns().Values()...).From(ps).Where(ps.Email.Eq(strings.ToLower(strings.TrimSpace(email)))),
 		dbx.MustMapper[authPrincipalRow](ps),
 	)
 	if err != nil {
 		return mo.None[authx.Principal](), err
 	}
-	if len(rows) == 0 {
+	rowOpt := rows.GetFirstOption()
+	if rowOpt.IsAbsent() {
 		return mo.None[authx.Principal](), nil
 	}
-	row := rows[0]
+	row := rowOpt.MustGet()
 	roleRows, err := dbx.QueryAll[authPrincipalRoleRow](ctx, db,
-		dbx.Select(prs.AllColumns()...).From(prs).Where(prs.PrincipalID.Eq(row.ID)),
+		dbx.Select(prs.AllColumns().Values()...).From(prs).Where(prs.PrincipalID.Eq(row.ID)),
 		dbx.MustMapper[authPrincipalRoleRow](prs),
 	)
 	if err != nil {
 		return mo.None[authx.Principal](), err
 	}
 	permRows, err := dbx.QueryAll[authPrincipalPermissionRow](ctx, db,
-		dbx.Select(pps.AllColumns()...).From(pps).Where(pps.PrincipalID.Eq(row.ID)),
+		dbx.Select(pps.AllColumns().Values()...).From(pps).Where(pps.PrincipalID.Eq(row.ID)),
 		dbx.MustMapper[authPrincipalPermissionRow](pps),
 	)
 	if err != nil {
 		return mo.None[authx.Principal](), err
 	}
-	roles := lo.Map(roleRows, func(rr authPrincipalRoleRow, _ int) string { return rr.Role })
-	perms := lo.Map(permRows, func(pr authPrincipalPermissionRow, _ int) string { return pr.Permission })
+	roles := collectionx.MapList(roleRows, func(_ int, rr authPrincipalRoleRow) string { return rr.Role })
+	perms := collectionx.MapList(permRows, func(_ int, pr authPrincipalPermissionRow) string { return pr.Permission })
 	return mo.Some(authx.Principal{
 		ID:          row.ID,
 		Roles:       roles,
@@ -110,7 +111,7 @@ func principalFromDB(ctx context.Context, db *dbx.DB, email string) (mo.Option[a
 }
 
 func hasPermission(pr authx.Principal, perm string) bool {
-	return lo.ContainsBy(pr.Permissions, func(p string) bool { return p == perm || p == "*" })
+	return pr.Permissions.AnyMatch(func(_ int, item string) bool { return item == perm || item == "*" })
 }
 
 var Module = dix.NewModule("auth",
@@ -141,10 +142,10 @@ var Module = dix.NewModule("auth",
 						return authx.AuthenticationResult{}, authx.ErrUnauthenticated
 					}
 					principal := pr.MustGet()
-					principal.Attributes = map[string]any{
+					principal.Attributes = collectionx.NewMapFrom(map[string]any{
 						"email": claims.Email,
 						"exp":   claims.ExpiresAt.Time.Format(time.RFC3339),
-					}
+					})
 					return authx.AuthenticationResult{Principal: principal}, nil
 				})),
 				authx.WithAuthorizer(authx.AuthorizerFunc(func(_ context.Context, input authx.AuthorizationModel) (authx.Decision, error) {

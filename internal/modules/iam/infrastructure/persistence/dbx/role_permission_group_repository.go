@@ -3,34 +3,34 @@ package dbx
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
+	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
-	"github.com/samber/lo"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 
 type rolePermissionGroupRepo struct {
 	session dbx.Session
-	rpg    rolePermissionGroupSchema
-	mapper dbx.Mapper[rolePermissionGroupRow]
+	rpg     rolePermissionGroupSchema
+	mapper  dbx.Mapper[rolePermissionGroupRow]
 }
 
 func NewRolePermissionGroupRepository(session dbx.Session) ports.RolePermissionGroupRepository {
 	rpg := dbx.MustSchema("app_role_permission_groups", rolePermissionGroupSchema{})
 	return &rolePermissionGroupRepo{
 		session: session,
-		rpg:    rpg,
-		mapper: dbx.MustMapper[rolePermissionGroupRow](rpg),
+		rpg:     rpg,
+		mapper:  dbx.MustMapper[rolePermissionGroupRow](rpg),
 	}
 }
 
 func (r *rolePermissionGroupRepo) ListPairs(ctx context.Context) ([]ports.RolePermissionGroupPair, error) {
-	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, r.session, dbx.Select(r.rpg.AllColumns()...).From(r.rpg), r.mapper)
+	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, r.session, dbx.Select(r.rpg.AllColumns().Values()...).From(r.rpg), r.mapper)
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) ports.RolePermissionGroupPair {
+	return collectionx.MapList(rows, func(_ int, row rolePermissionGroupRow) ports.RolePermissionGroupPair {
 		return ports.RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
-	}), nil
+	}).Values(), nil
 }
 
 func (r *rolePermissionGroupRepo) ListPairsByRoleIDs(ctx context.Context, roleIDs []string) ([]ports.RolePermissionGroupPair, error) {
@@ -41,23 +41,23 @@ func (r *rolePermissionGroupRepo) ListPairsByRoleIDs(ctx context.Context, roleID
 	rows, err := dbx.QueryAll[rolePermissionGroupRow](
 		ctx,
 		r.session,
-		dbx.Select(r.rpg.AllColumns()...).From(r.rpg).Where(r.rpg.RoleID.In(ids...)),
+		dbx.Select(r.rpg.AllColumns().Values()...).From(r.rpg).Where(r.rpg.RoleID.In(ids...)),
 		r.mapper,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) ports.RolePermissionGroupPair {
+	return collectionx.MapList(rows, func(_ int, row rolePermissionGroupRow) ports.RolePermissionGroupPair {
 		return ports.RolePermissionGroupPair{RoleID: row.RoleID, PermissionGroupID: row.PermissionGroupID}
-	}), nil
+	}).Values(), nil
 }
 
 func (r *rolePermissionGroupRepo) ListPermissionGroupIDsByRoleID(ctx context.Context, roleID string) ([]string, error) {
-	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, r.session, dbx.Select(r.rpg.AllColumns()...).From(r.rpg).Where(r.rpg.RoleID.Eq(roleID)), r.mapper)
+	rows, err := dbx.QueryAll[rolePermissionGroupRow](ctx, r.session, dbx.Select(r.rpg.AllColumns().Values()...).From(r.rpg).Where(r.rpg.RoleID.Eq(roleID)), r.mapper)
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row rolePermissionGroupRow, _ int) string { return row.PermissionGroupID }), nil
+	return collectionx.MapList(rows, func(_ int, row rolePermissionGroupRow) string { return row.PermissionGroupID }).Values(), nil
 }
 
 func (r *rolePermissionGroupRepo) ReplacePermissionGroupIDs(ctx context.Context, roleID string, permissionGroupIDs []string) error {
@@ -80,4 +80,3 @@ func (r *rolePermissionGroupRepo) DeleteByRoleID(ctx context.Context, roleID str
 	_, err := dbx.Exec(ctx, r.session, dbx.DeleteFrom(r.rpg).Where(r.rpg.RoleID.Eq(roleID)))
 	return err
 }
-

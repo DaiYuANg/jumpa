@@ -1,15 +1,19 @@
-# arcgo-rbac-template
+# jumpa
 
-A backend RBAC template based on ArcGo ecosystem, now organized with a DDD-style IAM module.
+A bastion and jump-host control-plane backend based on the ArcGo ecosystem, organized with DDD-style modules.
 
 ## Features
 
-- Multi-database support via config: `sqlite`, `mysql`, `postgres`
+- Multi-database support via config: `sqlite`, `mariadb`, `postgres`
 - Fiber-based HTTP runtime with `httpx` endpoint registration
+- Dedicated `cmd/gateway` runtime for the bastion SSH entrypoint scaffold
 - JWT auth flow (`login`, `refresh`, `logout`, `me`) with revocation support
 - Valkey integration via `kvx` (including distributed scheduler lock use-cases)
 - Embedded SQL migrations and dedicated `cmd/migrate` process
-- Modular IAM architecture (`domain/application/infrastructure/interfaces`)
+- Modular IAM architecture plus bastion scaffolding (`domain/application/interfaces`)
+- Identity-source abstraction for `local` and `os` login modes
+- OS identity planning for Linux PAM, Windows local/domain accounts, and macOS OpenDirectory
+- Bastion schema baseline for hosts, access policies, sessions, and command audit records
 
 ## Architecture Docs
 
@@ -20,7 +24,7 @@ A backend RBAC template based on ArcGo ecosystem, now organized with a DDD-style
 
 - Go 1.26+
 - Optional:
-  - MySQL or Postgres for external DB mode
+  - MariaDB or Postgres for external DB mode
   - Valkey for token/session revocation and distributed lock mode
   - Docker + Docker Compose for containerized runs
 
@@ -62,6 +66,39 @@ go run ./cmd/server
 
 Default API base path: `http://localhost:8080/api`
 
+Start the bastion gateway scaffold:
+
+```bash
+go run ./cmd/gateway
+```
+
+Current SSH login format:
+
+```text
+principal#host
+principal#host#account
+```
+
+Examples:
+
+```text
+alice#prod-web-01
+alice#prod-web-01#ubuntu
+```
+
+Target host credential conventions:
+
+- `authentication_type=passthrough`: reuse the password the user entered to log into jumpa
+- `credential_ref=env:VAR_NAME`: use the password stored in environment variable `VAR_NAME`
+- `credential_ref=file:/path/to/private_key`: use the private key file for downstream SSH auth
+
+Useful early bastion endpoints:
+
+- `GET /api/bastion/overview`
+- `GET /api/assets/hosts`
+- `GET /api/access-policies`
+- `GET /api/sessions`
+
 ## Common Commands
 
 Using Taskfile:
@@ -90,11 +127,13 @@ Build outputs (by default):
 ## Main Runtime Modules
 
 - `cmd/server`: app bootstrap and DI container startup
+- `cmd/gateway`: bastion SSH gateway runtime scaffold
 - `cmd/migrate`: migration bootstrap
 - `internal/modules/iam`: IAM bounded context
+- `internal/modules/bastion`: bastion control-plane scaffolding
+- `internal/identity`: application-managed vs OS-backed identity source selection
   - `domain`
   - `application`
-  - `infrastructure/persistence`
   - `interfaces/http`
 - `internal/api`: endpoint aggregation layer
 - `internal/http`: Fiber + middleware + httpx runtime wiring
@@ -102,4 +141,11 @@ Build outputs (by default):
 ## Notes
 
 - Legacy `internal/service` and `internal/repo` layers were removed after DDD migration.
+- The SSH gateway currently exposes a listener scaffold and identity-provider abstraction; full SSH session proxying and OS-backed credential validation are the next implementation steps.
+- `local` identity mode can already authenticate against the legacy `users` table when it contains bcrypt `password_hash` values.
+- `os` identity mode now has explicit Linux/Windows/macOS backend slots (`pam`, `winlogon`, `opendirectory`).
+- Linux PAM and macOS OpenDirectory paths are wired behind platform build tags. Linux requires cgo plus PAM headers and libraries; macOS requires cgo plus the OpenDirectory framework.
+- Windows `winlogon` authentication is wired through `LogonUserW`, with support for `DOMAIN\user`, `user@domain`, and local account forms.
+- The gateway now resolves target hosts and host accounts from `bastion_hosts` and `bastion_host_accounts`, then opens a downstream SSH client connection.
+- Access policy enforcement and session/audit persistence are still not wired into the live proxy path yet.
 - Add new business capabilities under `internal/modules/*` in the same layered style.

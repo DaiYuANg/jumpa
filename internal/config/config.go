@@ -1,6 +1,9 @@
 package config
 
 type AppConfig struct {
+	App struct {
+		Name string `koanf:"name"`
+	} `koanf:"app"`
 	Server struct {
 		Port int `koanf:"port"`
 	} `koanf:"server"`
@@ -32,9 +35,35 @@ type AppConfig struct {
 		AccessTTLMin   int    `koanf:"access_ttl_min"`
 		RefreshTTLHour int    `koanf:"refresh_ttl_hour"`
 	} `koanf:"jwt"`
+	Identity struct {
+		Provider string `koanf:"provider"`
+		OS       struct {
+			Backend          string `koanf:"backend"`
+			PAMService       string `koanf:"pam_service"`
+			DirectoryNode    string `koanf:"directory_node"`
+			CreateHomePolicy string `koanf:"create_home_policy"`
+		} `koanf:"os"`
+	} `koanf:"identity"`
+	Bastion struct {
+		Enabled bool `koanf:"enabled"`
+		SSH     struct {
+			ListenAddr       string `koanf:"listen_addr"`
+			HostKeyPath      string `koanf:"host_key_path"`
+			TrustedProxyCIDR string `koanf:"trusted_proxy_cidr"`
+		} `koanf:"ssh"`
+		Session struct {
+			IdleTimeoutMin     int    `koanf:"idle_timeout_min"`
+			MaxDurationMin     int    `koanf:"max_duration_min"`
+			RecordingDirectory string `koanf:"recording_directory"`
+		} `koanf:"session"`
+	} `koanf:"bastion"`
+	Audit struct {
+		StoreCommandInput bool `koanf:"store_command_input"`
+		StoreReplayStream bool `koanf:"store_replay_stream"`
+	} `koanf:"audit"`
 	Authz struct {
-		ProtectedPrefix     string `koanf:"protected_prefix"`
-		PublicPathsCSV      string `koanf:"public_paths_csv"`
+		ProtectedPrefix      string `koanf:"protected_prefix"`
+		PublicPathsCSV       string `koanf:"public_paths_csv"`
 		AuthOnlyResourcesCSV string `koanf:"auth_only_resources_csv"`
 	} `koanf:"authz"`
 }

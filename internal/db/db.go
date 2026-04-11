@@ -17,14 +17,14 @@ import (
 
 func Open(driver, dsn string, opts ...dbx.Option) (*dbx.DB, error) {
 	switch strings.ToLower(strings.TrimSpace(driver)) {
-	case "mysql":
+	case "mysql", "mariadb":
 		return OpenMySQL(dsn, opts...)
 	case "postgres", "postgresql":
 		return OpenPostgres(dsn, opts...)
 	case "", "sqlite":
 		return OpenSQLite(dsn, opts...)
 	default:
-		return nil, fmt.Errorf("unsupported db driver %q, supported: sqlite, mysql, postgres", driver)
+		return nil, fmt.Errorf("unsupported db driver %q, supported: sqlite, mysql, mariadb, postgres", driver)
 	}
 }
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/schema"
+	config2 "github.com/DaiYuANg/jumpa/internal/config"
+	"github.com/DaiYuANg/jumpa/internal/schema"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dix"
 )

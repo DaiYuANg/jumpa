@@ -6,13 +6,13 @@ import (
 	"log/slog"
 	"os"
 
-	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
-	db2 "github.com/DaiYuANg/arcgo-rbac-template/internal/db"
-	"github.com/DaiYuANg/arcgo-rbac-template/pkg"
 	"github.com/DaiYuANg/arcgo/configx"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/migrate"
 	"github.com/DaiYuANg/arcgo/logx"
+	config2 "github.com/DaiYuANg/jumpa/internal/config"
+	db2 "github.com/DaiYuANg/jumpa/internal/db"
+	"github.com/DaiYuANg/jumpa/pkg"
 )
 
 //go:embed migrations/*.sql

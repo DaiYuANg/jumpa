@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/application"
-	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
 	"github.com/DaiYuANg/arcgo/collectionx"
 	collectionset "github.com/DaiYuANg/arcgo/collectionx/set"
 	"github.com/DaiYuANg/arcgo/httpx"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/application"
+	iamdomain "github.com/DaiYuANg/jumpa/internal/modules/iam/domain"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/samber/lo"
 	"github.com/samber/mo"

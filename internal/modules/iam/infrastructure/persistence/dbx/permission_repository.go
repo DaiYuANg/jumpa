@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
+	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 	"github.com/samber/mo"
-	"github.com/samber/lo"
 )
 
 type permissionRow struct {
@@ -47,9 +47,9 @@ func (r *permissionRepo) ListPermissions(ctx context.Context) ([]ports.Permissio
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row permissionRow, _ int) ports.Permission {
+	return collectionx.MapList(rows, func(_ int, row permissionRow) ports.Permission {
 		return ports.Permission{ID: row.ID, Name: row.Name, Code: row.Code, GroupID: row.GroupID, CreatedAt: row.CreatedAt}
-	}), nil
+	}).Values(), nil
 }
 
 func (r *permissionRepo) GetPermission(ctx context.Context, id string) (mo.Option[ports.Permission], error) {
@@ -104,4 +104,3 @@ func (r *permissionRepo) DeletePermission(ctx context.Context, id string) (bool,
 	ra, _ := res.RowsAffected()
 	return ra > 0, nil
 }
-

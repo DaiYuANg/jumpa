@@ -3,10 +3,10 @@ package dbx
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
+	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
-	"github.com/samber/lo"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 
 type userRoleRow struct {
@@ -38,7 +38,7 @@ func (r *userRoleRepo) ListUserRoleIDs(ctx context.Context, userID int64) ([]str
 	if err != nil {
 		return nil, err
 	}
-	return lo.Map(rows, func(row userRoleRow, _ int) string { return row.RoleID }), nil
+	return collectionx.MapList(rows, func(_ int, row userRoleRow) string { return row.RoleID }).Values(), nil
 }
 
 func (r *userRoleRepo) SetUserRoleIDs(ctx context.Context, userID int64, roleIDs []string) error {
@@ -58,4 +58,3 @@ func (r *userRoleRepo) DeleteUserRoles(ctx context.Context, userID int64) error 
 	_, err := r.userRoleRepo.Delete(ctx, dbx.DeleteFrom(r.urs).Where(r.urs.UserID.Eq(userID)))
 	return err
 }
-

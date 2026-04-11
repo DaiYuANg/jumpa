@@ -1,14 +1,22 @@
+app:
+  name: jumpa
+
 server:
   port: 8080
 
 db:
-  # sqlite | mysql | postgres
+  # sqlite | mysql | mariadb | postgres
   driver: sqlite
   dsn: "file:backend?mode=memory&cache=shared"
+  node_id: 0
 
   # MySQL example:
   # driver: mysql
   # dsn: "user:password@tcp(127.0.0.1:3306)/arcgo?parseTime=true&loc=Local"
+
+  # MariaDB example:
+  # driver: mariadb
+  # dsn: "user:password@tcp(127.0.0.1:3306)/jumpa?parseTime=true&loc=Local"
 
   # PostgreSQL example:
   # driver: postgres
@@ -28,3 +36,27 @@ valkey:
   password: ""
   db: 0
   use_tls: false
+
+identity:
+  provider: local
+  os:
+    # auto | pam | winlogon | opendirectory
+    backend: auto
+    pam_service: sshd
+    directory_node: "/Search"
+    create_home_policy: manual
+
+bastion:
+  enabled: true
+  ssh:
+    listen_addr: ":2222"
+    host_key_path: "./secrets/ssh_host_ed25519_key"
+    trusted_proxy_cidr: ""
+  session:
+    idle_timeout_min: 15
+    max_duration_min: 480
+    recording_directory: "./data/recordings"
+
+audit:
+  store_command_input: true
+  store_replay_stream: true

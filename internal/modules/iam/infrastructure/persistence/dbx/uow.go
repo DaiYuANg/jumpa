@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/dbx"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 
 type unitOfWork struct {
@@ -34,7 +34,11 @@ func (u *unitOfWork) InTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx 
 		return err
 	}
 	committed := false
-	defer func() { if !committed { _ = tx.Rollback() } }()
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
 
 	scope := &uowTx{
 		tx:   tx,
@@ -51,6 +55,5 @@ func (u *unitOfWork) InTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx 
 	return nil
 }
 
-func (t *uowTx) Roles() ports.RoleRepository { return t.role }
+func (t *uowTx) Roles() ports.RoleRepository                               { return t.role }
 func (t *uowTx) RolePermissionGroups() ports.RolePermissionGroupRepository { return t.rpg }
-

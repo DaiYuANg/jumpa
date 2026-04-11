@@ -36,7 +36,7 @@ var Module = dix.NewModule("event",
 				return nil
 			})
 			if err != nil {
-				log.Error("failed to subscribe to event", err)
+				log.Error("failed to subscribe to event", slog.String("error", err.Error()))
 			}
 		}),
 	),

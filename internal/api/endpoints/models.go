@@ -8,7 +8,10 @@ type pageResponse[T any] struct {
 	Page     int `json:"page"`
 	PageSize int `json:"pageSize"`
 }
-type dynamicOutput struct{ Body any `json:"body"` }
+type dynamicOutput struct {
+	Body any `json:"body"`
+}
+type DynamicOutput = dynamicOutput
 type Result[T any] struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
@@ -63,6 +66,7 @@ type permissionGroupDTO struct {
 }
 
 func ok[T any](data T) Result[T] { return Result[T]{Success: true, Data: data} }
+func OK[T any](data T) Result[T] { return ok(data) }
 
 type ListResourceInput struct {
 	PageRequest
@@ -73,10 +77,16 @@ type ListResourceInput struct {
 	Sort      string `query:"sort" validate:"omitempty,max=200"`
 	Order     string `query:"order" validate:"omitempty,max=16"`
 }
-type ByIDInput struct{ ID string `path:"id" validate:"required"` }
-type DeleteManyInput struct{ ID string `query:"id" validate:"required"` }
+type ByIDInput struct {
+	ID string `path:"id" validate:"required"`
+}
+type DeleteManyInput struct {
+	ID string `query:"id" validate:"required"`
+}
 type HealthOutput struct {
-	Body struct{ Status string `json:"status"` } `json:"body"`
+	Body struct {
+		Status string `json:"status"`
+	} `json:"body"`
 }
 type LoginInput struct {
 	Body struct {
@@ -84,8 +94,16 @@ type LoginInput struct {
 		Password string `json:"password" validate:"required,min=1,max=128"`
 	} `json:"body"`
 }
-type RefreshInput struct{ Body struct{ RefreshToken string `json:"refreshToken"` } `json:"body"` }
-type LogoutInput struct{ Body struct{ RefreshToken string `json:"refreshToken"` } `json:"body"` }
+type RefreshInput struct {
+	Body struct {
+		RefreshToken string `json:"refreshToken"`
+	} `json:"body"`
+}
+type LogoutInput struct {
+	Body struct {
+		RefreshToken string `json:"refreshToken"`
+	} `json:"body"`
+}
 type CreateUserInput struct {
 	Body struct {
 		Name    string   `json:"name" validate:"required,min=2,max=64"`
@@ -105,7 +123,9 @@ type PatchUserInput struct {
 }
 type BulkPatchInput struct {
 	ID   string `query:"id" validate:"required"`
-	Body struct{ GroupID *string `json:"groupId"` } `json:"body"`
+	Body struct {
+		GroupID *string `json:"groupId"`
+	} `json:"body"`
 }
 type CreateRoleInput struct {
 	Body struct {

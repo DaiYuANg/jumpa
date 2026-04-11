@@ -31,7 +31,12 @@ var Module = dix.NewModule("config",
 	dix.WithModuleInvokes(
 		dix.Invoke2(func(cfg AppConfig, log *slog.Logger) {
 			addr := fmt.Sprintf(":%d", cfg.Server.Port)
-			log.Info("backend starting",
+			name := cfg.App.Name
+			if name == "" {
+				name = "jumpa"
+			}
+			log.Info("service starting",
+				slog.String("name", name),
 				slog.String("address", addr),
 				slog.String("docs", "http://localhost"+addr+"/docs"),
 				slog.String("openapi", "http://localhost"+addr+"/openapi.json"),

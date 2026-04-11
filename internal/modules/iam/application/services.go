@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/event"
-	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
 	"github.com/DaiYuANg/arcgo/eventx"
+	"github.com/DaiYuANg/jumpa/internal/event"
+	iamdomain "github.com/DaiYuANg/jumpa/internal/modules/iam/domain"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 	"github.com/samber/lo"
 	"github.com/samber/mo"
 )
@@ -167,7 +167,9 @@ func (s *roleAppService) DeleteRole(ctx context.Context, id string) (bool, error
 	return deleted, err
 }
 
-type permissionGroupAppService struct{ repo ports.PermissionGroupRepository }
+type permissionGroupAppService struct {
+	repo ports.PermissionGroupRepository
+}
 
 func NewPermissionGroupService(r ports.PermissionGroupRepository) PermissionGroupService {
 	return &permissionGroupAppService{repo: r}
@@ -210,7 +212,9 @@ func (s *permissionGroupAppService) DeletePermissionGroup(ctx context.Context, i
 
 type permissionAppService struct{ repo ports.PermissionRepository }
 
-func NewPermissionService(r ports.PermissionRepository) PermissionService { return &permissionAppService{repo: r} }
+func NewPermissionService(r ports.PermissionRepository) PermissionService {
+	return &permissionAppService{repo: r}
+}
 func (s *permissionAppService) ListPermissions(ctx context.Context) ([]iamdomain.Permission, error) {
 	items, err := s.repo.ListPermissions(ctx)
 	if err != nil {
@@ -249,7 +253,9 @@ func (s *permissionAppService) DeletePermission(ctx context.Context, id string) 
 
 type userRoleAppService struct{ repo ports.UserRoleRepository }
 
-func NewUserRoleService(r ports.UserRoleRepository) UserRoleService { return &userRoleAppService{repo: r} }
+func NewUserRoleService(r ports.UserRoleRepository) UserRoleService {
+	return &userRoleAppService{repo: r}
+}
 func (s *userRoleAppService) ListUserRoleIDs(ctx context.Context, userID int64) ([]string, error) {
 	return s.repo.ListUserRoleIDs(ctx, userID)
 }

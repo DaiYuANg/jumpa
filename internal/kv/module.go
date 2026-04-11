@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	config2 "github.com/DaiYuANg/arcgo-rbac-template/internal/config"
 	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/kvx"
 	adaptervalkey "github.com/DaiYuANg/arcgo/kvx/adapter/valkey"
+	config2 "github.com/DaiYuANg/jumpa/internal/config"
 )
 
 func toKVXClientOptions(cfg config2.AppConfig) kvx.ClientOptions {

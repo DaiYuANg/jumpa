@@ -14,7 +14,7 @@ func SelectDialect(driver string) (dialect.Dialect, error) {
 	switch strings.ToLower(strings.TrimSpace(driver)) {
 	case "", "sqlite":
 		return sqlitedialect.New(), nil
-	case "mysql":
+	case "mysql", "mariadb":
 		return mysql.New(), nil
 	case "postgres", "postgresql":
 		return postgres.New(), nil

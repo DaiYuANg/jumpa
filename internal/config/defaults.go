@@ -2,6 +2,11 @@ package config
 
 func DefaultAppConfig() AppConfig {
 	return AppConfig{
+		App: struct {
+			Name string `koanf:"name"`
+		}{
+			Name: "jumpa",
+		},
 		Server: struct {
 			Port int `koanf:"port"`
 		}{
@@ -57,9 +62,71 @@ func DefaultAppConfig() AppConfig {
 			RefreshTTLHour int    `koanf:"refresh_ttl_hour"`
 		}{
 			Secret:         "change-me-in-production",
-			Issuer:         "arcgo-rbac-template",
+			Issuer:         "jumpa",
 			AccessTTLMin:   30,
 			RefreshTTLHour: 168,
+		},
+		Identity: struct {
+			Provider string `koanf:"provider"`
+			OS       struct {
+				Backend          string `koanf:"backend"`
+				PAMService       string `koanf:"pam_service"`
+				DirectoryNode    string `koanf:"directory_node"`
+				CreateHomePolicy string `koanf:"create_home_policy"`
+			} `koanf:"os"`
+		}{
+			Provider: "local",
+			OS: struct {
+				Backend          string `koanf:"backend"`
+				PAMService       string `koanf:"pam_service"`
+				DirectoryNode    string `koanf:"directory_node"`
+				CreateHomePolicy string `koanf:"create_home_policy"`
+			}{
+				Backend:          "auto",
+				PAMService:       "sshd",
+				DirectoryNode:    "/Search",
+				CreateHomePolicy: "manual",
+			},
+		},
+		Bastion: struct {
+			Enabled bool `koanf:"enabled"`
+			SSH     struct {
+				ListenAddr       string `koanf:"listen_addr"`
+				HostKeyPath      string `koanf:"host_key_path"`
+				TrustedProxyCIDR string `koanf:"trusted_proxy_cidr"`
+			} `koanf:"ssh"`
+			Session struct {
+				IdleTimeoutMin     int    `koanf:"idle_timeout_min"`
+				MaxDurationMin     int    `koanf:"max_duration_min"`
+				RecordingDirectory string `koanf:"recording_directory"`
+			} `koanf:"session"`
+		}{
+			Enabled: true,
+			SSH: struct {
+				ListenAddr       string `koanf:"listen_addr"`
+				HostKeyPath      string `koanf:"host_key_path"`
+				TrustedProxyCIDR string `koanf:"trusted_proxy_cidr"`
+			}{
+				ListenAddr:       ":2222",
+				HostKeyPath:      "./secrets/ssh_host_ed25519_key",
+				TrustedProxyCIDR: "",
+			},
+			Session: struct {
+				IdleTimeoutMin     int    `koanf:"idle_timeout_min"`
+				MaxDurationMin     int    `koanf:"max_duration_min"`
+				RecordingDirectory string `koanf:"recording_directory"`
+			}{
+				IdleTimeoutMin:     15,
+				MaxDurationMin:     480,
+				RecordingDirectory: "./data/recordings",
+			},
+		},
+		Audit: struct {
+			StoreCommandInput bool `koanf:"store_command_input"`
+			StoreReplayStream bool `koanf:"store_replay_stream"`
+		}{
+			StoreCommandInput: true,
+			StoreReplayStream: true,
 		},
 		Authz: struct {
 			ProtectedPrefix      string `koanf:"protected_prefix"`

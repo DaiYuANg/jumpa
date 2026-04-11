@@ -1,12 +1,12 @@
 package wire
 
 import (
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/db"
-	dbxrepo "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/infrastructure/persistence/dbx"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/ports"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/schema"
-	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/dbx"
+	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/DaiYuANg/jumpa/internal/db"
+	dbxrepo "github.com/DaiYuANg/jumpa/internal/modules/iam/infrastructure/persistence/dbx"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
+	"github.com/DaiYuANg/jumpa/internal/schema"
 )
 
 var Module = dix.NewModule("iam.infrastructure.persistence.wire",
@@ -40,4 +40,3 @@ var Module = dix.NewModule("iam.infrastructure.persistence.wire",
 		}),
 	),
 )
-

@@ -1,9 +1,9 @@
 package http
 
 import (
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam"
-	"github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/application"
 	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam"
+	"github.com/DaiYuANg/jumpa/internal/modules/iam/application"
 )
 
 var Module = dix.NewModule("iam-http",

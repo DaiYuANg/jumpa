@@ -3,7 +3,7 @@ package application
 import (
 	"context"
 
-	iamdomain "github.com/DaiYuANg/arcgo-rbac-template/internal/modules/iam/domain"
+	iamdomain "github.com/DaiYuANg/jumpa/internal/modules/iam/domain"
 	"github.com/samber/mo"
 )
 
