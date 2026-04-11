@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This project uses a DDD-style modular architecture for a bastion and jump-host control plane. The current codebase keeps `iam` as a bounded context and introduces `bastion` scaffolding for assets, access policies, and sessions.
+This project uses a DDD-style modular architecture for a bastion and jump-host control plane. The current codebase keeps `iam` as a bounded context and evolves `bastion` into an internal control-plane module with explicit asset, access, and session slices.
 
 ## High-level Structure
 
@@ -8,7 +8,7 @@ This project uses a DDD-style modular architecture for a bastion and jump-host c
 - `cmd/gateway`: bastion SSH gateway bootstrap.
 - `cmd/migrate`: migration entrypoint (embedded SQL migrations).
 - `internal/modules/iam`: core IAM domain module.
-- `internal/modules/bastion`: bastion control-plane scaffolding.
+- `internal/modules/bastion`: bastion control-plane module.
 - `internal/identity`: identity source resolution for application-managed and OS-backed login modes.
 - `internal/api`: API aggregation for system/auth/dashboard and module endpoint composition.
 - `internal/http`: Fiber + Huma server runtime and authz middleware wiring.
@@ -30,13 +30,25 @@ This project uses a DDD-style modular architecture for a bastion and jump-host c
   - IAM HTTP endpoints, DTOs, mapping, paging/response helpers.
   - Registers IAM routes via `httpx.Endpoint`.
 
-`internal/modules/bastion` currently provides the first control-plane slice:
+`internal/modules/bastion` currently provides the first control-plane slice and is now internally split across dedicated internal submodules:
+
+- `overview`
+  - wires runtime overview/readiness services.
+- `asset`
+  - wires host and host-account services plus gateway target resolution.
+- `access`
+  - wires policy matching and approval-request services.
+- `session`
+  - wires session query/runtime lifecycle services.
+
+The shared business code remains grouped by layer under `application/*`, `domain/*`, and `ports/*`, but the root `bastion.Module` now acts as an aggregator instead of directly providing every service.
 
 - `domain`
   - Host, access policy, session, access request, and overview models.
 - `application`
   - Services for overview, assets, access policies, access requests, and sessions.
 - `interfaces/http`
+  - one `BastionEndpoint` registration surface, split internally into overview, asset, access, and session route files.
   - `/api/bastion/overview`, `/api/assets/hosts`, `/api/access-policies`, `/api/access-requests`, `/api/sessions`.
 
 The gateway runtime currently uses a pragmatic login convention:
@@ -80,7 +92,7 @@ Across system:
   - application services
   - persistence module imports
   - event bus integration where needed.
-- `internal/modules/bastion/module.go` wires overview, asset, policy, access-request, access, and session services.
+- `internal/modules/bastion/module.go` imports `overview`, `asset`, `access`, and `session` submodules, plus shared persistence/config dependencies.
 - `internal/modules/iam/interfaces/http/module.go` wires IAM endpoints.
 - `internal/modules/bastion/interfaces/http/module.go` wires bastion endpoints.
 - `internal/api/module.go` aggregates endpoint slices into one `[]httpx.Endpoint`.

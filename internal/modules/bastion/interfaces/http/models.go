@@ -6,6 +6,18 @@ import (
 	"github.com/DaiYuANg/jumpa/internal/identity"
 )
 
+type pageRequest struct {
+	Page     int `query:"page" validate:"omitempty,min=1"`
+	PageSize int `query:"pageSize" validate:"omitempty,min=1,max=200"`
+}
+
+type pageResult[T any] struct {
+	Items    []T `json:"items"`
+	Total    int `json:"total"`
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
+}
+
 type overviewDTO struct {
 	ProductName        string                      `json:"productName"`
 	DatabaseDriver     string                      `json:"databaseDriver"`
@@ -182,4 +194,9 @@ type reviewAccessRequestInput struct {
 		Reviewer string  `json:"reviewer" validate:"required,min=1,max=128"`
 		Comment  *string `json:"comment,omitempty" validate:"omitempty,max=500"`
 	} `json:"body"`
+}
+
+type listAccessRequestsInput struct {
+	pageRequest
+	Status string `query:"status" validate:"omitempty,max=64"`
 }

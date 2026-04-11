@@ -108,6 +108,10 @@ Useful early bastion endpoints:
 - `POST /api/access-requests/{id}/reject`
 - `GET /api/sessions`
 
+Access request list query:
+
+- `GET /api/access-requests?status=pending&page=1&pageSize=20`
+
 Approval workflow defaults:
 
 - Approved access requests expire after `APP_BASTION_ACCESS_APPROVAL_TTL_MIN` minutes
@@ -144,7 +148,7 @@ Build outputs (by default):
 - `cmd/gateway`: bastion SSH gateway runtime
 - `cmd/migrate`: migration bootstrap
 - `internal/modules/iam`: IAM bounded context
-- `internal/modules/bastion`: bastion control-plane scaffolding
+- `internal/modules/bastion`: bastion control-plane module
 - `internal/identity`: application-managed vs OS-backed identity source selection
   - `domain`
   - `application`
@@ -162,5 +166,5 @@ Build outputs (by default):
 - Windows `winlogon` authentication is wired through `LogonUserW`, with support for `DOMAIN\user`, `user@domain`, and local account forms.
 - The gateway resolves target hosts and host accounts from `bastion_hosts` and `bastion_host_accounts`, then opens a downstream SSH client connection.
 - Access policy enforcement is wired into the live proxy path, with `subjectType` support for `user`, `principal`, `email`, `role`, and `*`.
-- Policies marked `approvalRequired=true` now create bastion access requests in `bastion_access_requests`; approved requests are reusable in the current minimal workflow.
+- Policies marked `approvalRequired=true` create bastion access requests in `bastion_access_requests`; approved requests now expire and are consumed on first successful session establishment.
 - Add new business capabilities under `internal/modules/*` in the same layered style.

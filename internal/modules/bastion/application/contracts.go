@@ -125,8 +125,14 @@ type SessionService interface {
 	ListSessions(ctx context.Context) ([]bastiondomain.Session, error)
 }
 
+type ListAccessRequestsInput struct {
+	Status string
+	Limit  int
+	Offset int
+}
+
 type AccessRequestService interface {
-	ListRequests(ctx context.Context) ([]bastiondomain.AccessRequest, error)
+	ListRequests(ctx context.Context, in ListAccessRequestsInput) ([]bastiondomain.AccessRequest, int, error)
 	GetRequest(ctx context.Context, id string) (mo.Option[bastiondomain.AccessRequest], error)
 	Approve(ctx context.Context, id, reviewer string, comment *string) (mo.Option[bastiondomain.AccessRequest], error)
 	Reject(ctx context.Context, id, reviewer string, comment *string) (mo.Option[bastiondomain.AccessRequest], error)

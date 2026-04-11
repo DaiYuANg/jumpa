@@ -61,14 +61,28 @@ func NewAccessRequestRepository(db *dbx.DB) ports.AccessRequestRepository {
 	return &accessRequestRepo{ars: ars, repo: repository.New[accessRequestRow](db, ars)}
 }
 
-func (r *accessRequestRepo) ListRequests(ctx context.Context) ([]ports.AccessRequestRecord, error) {
-	rows, err := r.repo.ListSpec(ctx, repository.OrderBy(r.ars.RequestedAt.Desc()))
+func (r *accessRequestRepo) ListRequests(ctx context.Context, in ports.ListAccessRequestsInput) ([]ports.AccessRequestRecord, int, error) {
+	specs := []repository.Spec{repository.OrderBy(r.ars.RequestedAt.Desc())}
+	if status := strings.TrimSpace(in.Status); status != "" {
+		specs = append(specs, repository.Where(r.ars.Status.Eq(status)))
+	}
+	if in.Limit <= 0 {
+		in.Limit = 10
+	}
+	if in.Offset < 0 {
+		in.Offset = 0
+	}
+	total, err := r.repo.CountSpec(ctx, specs...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+	rows, err := r.repo.ListSpec(ctx, append(specs, repository.Limit(in.Limit), repository.Offset(in.Offset))...)
+	if err != nil {
+		return nil, 0, err
 	}
 	return collectionx.MapList(rows, func(_ int, row accessRequestRow) ports.AccessRequestRecord {
 		return toAccessRequestRecord(row)
-	}).Values(), nil
+	}).Values(), int(total), nil
 }
 
 func (r *accessRequestRepo) GetRequestByID(ctx context.Context, id string) (mo.Option[ports.AccessRequestRecord], error) {
