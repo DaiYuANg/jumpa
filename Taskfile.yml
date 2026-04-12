@@ -40,10 +40,12 @@ tasks:
       - go test ./...
 
   build:bins:
-    desc: Build server and migrate binaries into dist
+    desc: Build server, gateway, cli, and migrate binaries into dist
     cmds:
       - mkdir -p {{.DIST_DIR}}
       - go build -trimpath -ldflags="-s -w" -o {{.DIST_DIR}}/server{{.BIN_EXT}} ./cmd/server
+      - go build -trimpath -ldflags="-s -w" -o {{.DIST_DIR}}/gateway{{.BIN_EXT}} ./cmd/gateway
+      - go build -trimpath -ldflags="-s -w" -o {{.DIST_DIR}}/cli{{.BIN_EXT}} ./cmd/cli
       - go build -trimpath -ldflags="-s -w" -o {{.DIST_DIR}}/migrate{{.BIN_EXT}} ./cmd/migrate
     env:
       CGO_ENABLED: "0"
@@ -55,7 +57,7 @@ tasks:
     deps:
       - build:bins
     cmds:
-      - upx --best --lzma {{.DIST_DIR}}/server{{.BIN_EXT}} {{.DIST_DIR}}/migrate{{.BIN_EXT}}
+      - upx --best --lzma {{.DIST_DIR}}/server{{.BIN_EXT}} {{.DIST_DIR}}/gateway{{.BIN_EXT}} {{.DIST_DIR}}/cli{{.BIN_EXT}} {{.DIST_DIR}}/migrate{{.BIN_EXT}}
 
   docker:build:server:
     desc: Build server image (multi-stage target=server)

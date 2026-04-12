@@ -74,3 +74,12 @@ gateway:
 audit:
   store_command_input: true
   store_replay_stream: true
+
+cli:
+  api_url: "http://127.0.0.1:8080"
+  gateway_addr: ""
+  email: ""
+  password: ""
+  principal: ""
+  ssh_binary: "ssh"
+  alt_screen: true

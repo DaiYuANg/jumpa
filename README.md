@@ -73,6 +73,12 @@ Start the bastion gateway scaffold:
 go run ./cmd/gateway
 ```
 
+Start the interactive CLI:
+
+```bash
+go run ./cmd/cli
+```
+
 Current SSH login format:
 
 ```text
@@ -98,6 +104,13 @@ Target host key verification:
 - `APP_BASTION_SSH_HOST_KEY_POLICY=insecure`: skip downstream host key verification
 - `APP_BASTION_SSH_HOST_KEY_POLICY=known_hosts`: verify downstream host keys against `APP_BASTION_SSH_KNOWN_HOSTS_PATH`
 - Production deployments should use `known_hosts`
+
+CLI runtime notes:
+
+- `cmd/cli` uses the same ArcGo-style DI/runtime approach as `cmd/server` and `cmd/gateway`
+- CLI config loads from `.env` plus `APP_CLI_*` environment variables
+- Supported overrides: `-api`, `-gateway`, `-email`, `-password`, `-principal`, `-ssh`, `-alt-screen`
+- The CLI reuses the existing control-plane HTTP APIs and launches the local `ssh` binary for actual terminal sessions
 
 Useful early bastion endpoints:
 
@@ -143,6 +156,8 @@ task build:bins
 Build outputs (by default):
 
 - `dist/server` (or `dist/server.exe` on Windows)
+- `dist/gateway` (or `dist/gateway.exe` on Windows)
+- `dist/cli` (or `dist/cli.exe` on Windows)
 - `dist/migrate` (or `dist/migrate.exe` on Windows)
 
 ## Docker
@@ -155,6 +170,7 @@ Build outputs (by default):
 
 - `cmd/server`: app bootstrap and DI container startup
 - `cmd/gateway`: bastion SSH gateway runtime
+- `cmd/cli`: interactive control-plane client plus local SSH launcher
 - `cmd/migrate`: migration bootstrap
 - `internal/modules/iam`: IAM bounded context
 - `internal/modules/bastion`: bastion control-plane module
