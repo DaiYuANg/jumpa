@@ -5,12 +5,13 @@ import (
 
 	"github.com/DaiYuANg/arcgo/httpx"
 	apiendpoints "github.com/DaiYuANg/jumpa/internal/api/endpoints"
+	"github.com/DaiYuANg/jumpa/internal/modules/bastion/application"
 	"github.com/danielgtaylor/huma/v2"
 )
 
-func (e *BastionEndpoint) registerSessionRoutes(api *httpx.Group) {
+func registerSessionRoutes(api *httpx.Group, sessionSvc application.SessionService) {
 	httpx.MustGroupGet(api, "/sessions", func(ctx context.Context, _ *struct{}) (*apiendpoints.DynamicOutput, error) {
-		items, err := e.sessionSvc.ListSessions(ctx)
+		items, err := sessionSvc.ListSessions(ctx)
 		if err != nil {
 			return nil, err
 		}

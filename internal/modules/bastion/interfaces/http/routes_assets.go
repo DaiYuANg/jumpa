@@ -10,9 +10,9 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
+func registerAssetRoutes(api *httpx.Group, assetSvc application.AssetService) {
 	httpx.MustGroupGet(api, "/assets/hosts", func(ctx context.Context, _ *struct{}) (*apiendpoints.DynamicOutput, error) {
-		items, err := e.assetSvc.ListHosts(ctx)
+		items, err := assetSvc.ListHosts(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -20,7 +20,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupGet(api, "/assets/hosts/{id}", func(ctx context.Context, input *apiendpoints.ByIDInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.assetSvc.GetHost(ctx, input.ID)
+		item, err := assetSvc.GetHost(ctx, input.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +31,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupPost(api, "/assets/hosts", func(ctx context.Context, input *createHostInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.assetSvc.CreateHost(ctx, application.CreateHostInput{
+		item, err := assetSvc.CreateHost(ctx, application.CreateHostInput{
 			Name:            input.Body.Name,
 			Address:         input.Body.Address,
 			Port:            input.Body.Port,
@@ -50,7 +50,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupPatch(api, "/assets/hosts/{id}", func(ctx context.Context, input *patchHostInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.assetSvc.UpdateHost(ctx, input.ID, application.UpdateHostInput{
+		item, err := assetSvc.UpdateHost(ctx, input.ID, application.UpdateHostInput{
 			Name:            input.Body.Name,
 			Address:         input.Body.Address,
 			Port:            input.Body.Port,
@@ -72,7 +72,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupDelete(api, "/assets/hosts/{id}", func(ctx context.Context, input *apiendpoints.ByIDInput) (*apiendpoints.DynamicOutput, error) {
-		deleted, err := e.assetSvc.DeleteHost(ctx, input.ID)
+		deleted, err := assetSvc.DeleteHost(ctx, input.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupGet(api, "/assets/hosts/{hostId}/accounts", func(ctx context.Context, input *hostAccountsByHostInput) (*apiendpoints.DynamicOutput, error) {
-		items, err := e.assetSvc.ListHostAccounts(ctx, input.HostID)
+		items, err := assetSvc.ListHostAccounts(ctx, input.HostID)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +91,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupGet(api, "/assets/hosts/{hostId}/accounts/{accountId}", func(ctx context.Context, input *hostAccountByIDInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.assetSvc.GetHostAccount(ctx, input.HostID, input.AccountID)
+		item, err := assetSvc.GetHostAccount(ctx, input.HostID, input.AccountID)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupPost(api, "/assets/hosts/{hostId}/accounts", func(ctx context.Context, input *createHostAccountInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.assetSvc.CreateHostAccount(ctx, input.HostID, application.CreateHostAccountInput{
+		item, err := assetSvc.CreateHostAccount(ctx, input.HostID, application.CreateHostAccountInput{
 			AccountName:        input.Body.AccountName,
 			AuthenticationType: input.Body.AuthenticationType,
 			CredentialRef:      input.Body.CredentialRef,
@@ -114,7 +114,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupPatch(api, "/assets/hosts/{hostId}/accounts/{accountId}", func(ctx context.Context, input *patchHostAccountInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.assetSvc.UpdateHostAccount(ctx, input.HostID, input.AccountID, application.UpdateHostAccountInput{
+		item, err := assetSvc.UpdateHostAccount(ctx, input.HostID, input.AccountID, application.UpdateHostAccountInput{
 			AccountName:        input.Body.AccountName,
 			AuthenticationType: input.Body.AuthenticationType,
 			CredentialRef:      input.Body.CredentialRef,
@@ -129,7 +129,7 @@ func (e *BastionEndpoint) registerAssetRoutes(api *httpx.Group) {
 	}, huma.OperationTags("assets"))
 
 	httpx.MustGroupDelete(api, "/assets/hosts/{hostId}/accounts/{accountId}", func(ctx context.Context, input *hostAccountByIDInput) (*apiendpoints.DynamicOutput, error) {
-		deleted, err := e.assetSvc.DeleteHostAccount(ctx, input.HostID, input.AccountID)
+		deleted, err := assetSvc.DeleteHostAccount(ctx, input.HostID, input.AccountID)
 		if err != nil {
 			return nil, err
 		}

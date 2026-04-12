@@ -5,12 +5,13 @@ import (
 
 	"github.com/DaiYuANg/arcgo/httpx"
 	apiendpoints "github.com/DaiYuANg/jumpa/internal/api/endpoints"
+	"github.com/DaiYuANg/jumpa/internal/modules/bastion/application"
 	"github.com/danielgtaylor/huma/v2"
 )
 
-func (e *BastionEndpoint) registerOverviewRoutes(api *httpx.Group) {
+func registerOverviewRoutes(api *httpx.Group, overviewSvc application.OverviewService) {
 	httpx.MustGroupGet(api, "/bastion/overview", func(ctx context.Context, _ *struct{}) (*apiendpoints.DynamicOutput, error) {
-		data, err := e.overviewSvc.Get(ctx)
+		data, err := overviewSvc.Get(ctx)
 		if err != nil {
 			return nil, err
 		}

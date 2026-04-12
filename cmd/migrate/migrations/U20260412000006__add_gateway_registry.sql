@@ -1,0 +1,3 @@
+DROP INDEX idx_gateway_registry_nodes_state_last_seen;
+DROP INDEX uk_gateway_registry_nodes_node_key;
+DROP TABLE gateway_registry_nodes;

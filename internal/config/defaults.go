@@ -135,6 +135,35 @@ func DefaultAppConfig() AppConfig {
 				ApprovalTTLMin: 30,
 			},
 		},
+		Gateway: struct {
+			Registry struct {
+				NodeName        string `koanf:"node_name"`
+				NodeKey         string `koanf:"node_key"`
+				AdvertiseAddr   string `koanf:"advertise_addr"`
+				Zone            string `koanf:"zone"`
+				TagsCSV         string `koanf:"tags_csv"`
+				HeartbeatSec    int    `koanf:"heartbeat_sec"`
+				OfflineAfterSec int    `koanf:"offline_after_sec"`
+			} `koanf:"registry"`
+		}{
+			Registry: struct {
+				NodeName        string `koanf:"node_name"`
+				NodeKey         string `koanf:"node_key"`
+				AdvertiseAddr   string `koanf:"advertise_addr"`
+				Zone            string `koanf:"zone"`
+				TagsCSV         string `koanf:"tags_csv"`
+				HeartbeatSec    int    `koanf:"heartbeat_sec"`
+				OfflineAfterSec int    `koanf:"offline_after_sec"`
+			}{
+				NodeName:        "",
+				NodeKey:         "",
+				AdvertiseAddr:   "",
+				Zone:            "default",
+				TagsCSV:         "ssh",
+				HeartbeatSec:    15,
+				OfflineAfterSec: 60,
+			},
+		},
 		Audit: struct {
 			StoreCommandInput bool `koanf:"store_command_input"`
 			StoreReplayStream bool `koanf:"store_replay_stream"`

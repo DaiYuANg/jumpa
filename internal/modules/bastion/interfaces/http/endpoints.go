@@ -1,42 +1,8 @@
 package http
 
-import (
-	"github.com/DaiYuANg/arcgo/httpx"
-	"github.com/DaiYuANg/jumpa/internal/modules/bastion/application"
-)
+import "github.com/DaiYuANg/arcgo/httpx"
 
-type BastionEndpoint struct {
-	httpx.BaseEndpoint
-	overviewSvc application.OverviewService
-	assetSvc    application.AssetService
-	policySvc   application.PolicyService
-	requestSvc  application.AccessRequestService
-	sessionSvc  application.SessionService
-}
-
-func NewBastionEndpoint(
-	overviewSvc application.OverviewService,
-	assetSvc application.AssetService,
-	policySvc application.PolicyService,
-	requestSvc application.AccessRequestService,
-	sessionSvc application.SessionService,
-) *BastionEndpoint {
-	return &BastionEndpoint{
-		overviewSvc: overviewSvc,
-		assetSvc:    assetSvc,
-		policySvc:   policySvc,
-		requestSvc:  requestSvc,
-		sessionSvc:  sessionSvc,
-	}
-}
-
-func (e *BastionEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	api := server.Group("/api")
-	e.registerOverviewRoutes(api)
-	e.registerAssetRoutes(api)
-	e.registerAccessRoutes(api)
-	e.registerSessionRoutes(api)
-}
+type Endpoints []httpx.Endpoint
 
 func boolOr(value *bool, fallback bool) bool {
 	if value == nil {

@@ -8,11 +8,15 @@ import (
 	"github.com/DaiYuANg/jumpa/internal/config"
 	"github.com/DaiYuANg/jumpa/internal/kv"
 	bastionhttp "github.com/DaiYuANg/jumpa/internal/modules/bastion/interfaces/http"
+	gatewayregistryhttp "github.com/DaiYuANg/jumpa/internal/modules/gatewayregistry/interfaces/http"
 	iamhttp "github.com/DaiYuANg/jumpa/internal/modules/iam/interfaces/http"
+	"github.com/samber/lo"
 )
 
+type staticEndpoints []httpx.Endpoint
+
 var Module = dix.NewModule("api",
-	dix.WithModuleImports(iamhttp.Module, bastionhttp.Module, kv.Module, config.Module),
+	dix.WithModuleImports(iamhttp.Module, bastionhttp.Module, gatewayregistryhttp.Module, kv.Module, config.Module),
 	dix.WithModuleProviders(
 		dix.Provider0(func() *apiendpoints.SystemEndpoint { return apiendpoints.NewSystemEndpoint() }),
 		dix.Provider2(func(cfg config.AppConfig, kvClient kvx.Client) *apiendpoints.AuthEndpoint {
@@ -26,15 +30,25 @@ var Module = dix.NewModule("api",
 			}, kvClient)
 		}),
 		dix.Provider0(func() *apiendpoints.DashboardEndpoint { return apiendpoints.NewDashboardEndpoint() }),
-		dix.Provider6(func(
+		dix.Provider5(func(
 			system *apiendpoints.SystemEndpoint,
 			auth *apiendpoints.AuthEndpoint,
 			dashboard *apiendpoints.DashboardEndpoint,
 			user *iamhttp.UserEndpoint,
 			rbac *iamhttp.RBACEndpoint,
-			bastion *bastionhttp.BastionEndpoint,
+		) staticEndpoints {
+			return staticEndpoints([]httpx.Endpoint{system, auth, dashboard, user, rbac})
+		}),
+		dix.Provider3(func(
+			static staticEndpoints,
+			bastion bastionhttp.Endpoints,
+			gateway *gatewayregistryhttp.GatewayEndpoint,
 		) []httpx.Endpoint {
-			return []httpx.Endpoint{system, auth, dashboard, user, rbac, bastion}
+			return lo.Flatten([][]httpx.Endpoint{
+				static,
+				bastion,
+				{gateway},
+			})
 		}),
 	),
 )

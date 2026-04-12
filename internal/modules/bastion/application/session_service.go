@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	bastiondomain "github.com/DaiYuANg/jumpa/internal/modules/bastion/domain"
@@ -11,15 +10,14 @@ import (
 
 type sessionService struct {
 	sessionRepo ports.SessionRepository
-	eventRepo   ports.SessionEventRepository
 }
 
 func NewSessionService(sessionRepo ports.SessionRepository) SessionService {
 	return &sessionService{sessionRepo: sessionRepo}
 }
 
-func NewSessionRuntimeService(sessionRepo ports.SessionRepository, eventRepo ports.SessionEventRepository) SessionRuntimeService {
-	return &sessionService{sessionRepo: sessionRepo, eventRepo: eventRepo}
+func NewSessionRuntimeService(sessionRepo ports.SessionRepository) SessionRuntimeService {
+	return &sessionService{sessionRepo: sessionRepo}
 }
 
 func (s *sessionService) ListSessions(ctx context.Context) ([]bastiondomain.Session, error) {
@@ -62,29 +60,6 @@ func (s *sessionService) Start(ctx context.Context, in StartSessionInput) (basti
 
 func (s *sessionService) MarkActive(ctx context.Context, sessionID string) error {
 	return s.sessionRepo.UpdateSessionStatus(ctx, sessionID, "active", nil)
-}
-
-func (s *sessionService) RecordEvent(ctx context.Context, sessionID, eventType string, payload map[string]string) error {
-	if s.eventRepo == nil {
-		return nil
-	}
-
-	var data *string
-	if len(payload) > 0 {
-		raw, err := json.Marshal(payload)
-		if err != nil {
-			return err
-		}
-		value := string(raw)
-		data = &value
-	}
-
-	return s.eventRepo.CreateSessionEvent(ctx, ports.CreateSessionEventInput{
-		SessionID: sessionID,
-		EventType: eventType,
-		Payload:   data,
-		CreatedAt: time.Now().UTC(),
-	})
 }
 
 func (s *sessionService) Finish(ctx context.Context, sessionID, status string) error {

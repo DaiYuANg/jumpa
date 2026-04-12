@@ -13,11 +13,15 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
 	"github.com/DaiYuANg/jumpa/internal/identity"
+	auditapp "github.com/DaiYuANg/jumpa/internal/modules/audit/application"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/application"
 	bastiondomain "github.com/DaiYuANg/jumpa/internal/modules/bastion/domain"
+	registryapp "github.com/DaiYuANg/jumpa/internal/modules/gatewayregistry/application"
+	"github.com/DaiYuANg/jumpa/pkg"
 	"github.com/samber/mo"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
@@ -32,10 +36,15 @@ type Service struct {
 	targetSvc     application.TargetService
 	accessSvc     application.AccessService
 	sessionSvc    application.SessionRuntimeService
+	auditSvc      auditapp.SessionEventService
+	registrySvc   registryapp.GatewayService
 
 	mu                    sync.Mutex
 	listener              net.Listener
 	targetHostKeyCallback ssh.HostKeyCallback
+	registryNodeKey       string
+	registryStop          chan struct{}
+	registryWG            sync.WaitGroup
 }
 
 type execRequest struct {
@@ -78,8 +87,17 @@ type sessionOptions struct {
 	shell     bool
 }
 
-func NewService(cfg config2.AppConfig, log *slog.Logger, authenticator identity.Authenticator, targetSvc application.TargetService, accessSvc application.AccessService, sessionSvc application.SessionRuntimeService) *Service {
-	return &Service{cfg: cfg, log: log, authenticator: authenticator, targetSvc: targetSvc, accessSvc: accessSvc, sessionSvc: sessionSvc}
+func NewService(cfg config2.AppConfig, log *slog.Logger, authenticator identity.Authenticator, targetSvc application.TargetService, accessSvc application.AccessService, sessionSvc application.SessionRuntimeService, auditSvc auditapp.SessionEventService, registrySvc registryapp.GatewayService) *Service {
+	return &Service{
+		cfg:           cfg,
+		log:           log,
+		authenticator: authenticator,
+		targetSvc:     targetSvc,
+		accessSvc:     accessSvc,
+		sessionSvc:    sessionSvc,
+		auditSvc:      auditSvc,
+		registrySvc:   registrySvc,
+	}
 }
 
 func (s *Service) Start(_ context.Context) error {
@@ -111,6 +129,11 @@ func (s *Service) Start(_ context.Context) error {
 	s.listener = ln
 	s.targetHostKeyCallback = targetHostKeyCallback
 	s.mu.Unlock()
+
+	if err := s.startRegistryLoop(ln); err != nil {
+		_ = ln.Close()
+		return err
+	}
 
 	descriptor := s.authenticator.Descriptor()
 	s.log.Info("gateway listening",
@@ -214,7 +237,11 @@ func (s *Service) handleSessionChannel(serverConn *ssh.ServerConn, newChannel ss
 		s.writeProxyError(channel, errors.New("session registration failed"))
 		return
 	}
-	if err := s.sessionSvc.RecordEvent(context.Background(), bastionSession.ID, "channel_opened", sessionPayload(opts)); err != nil {
+	if err := s.auditSvc.Record(context.Background(), auditapp.RecordSessionEventInput{
+		SessionID: bastionSession.ID,
+		EventType: "channel_opened",
+		Payload:   sessionPayload(opts),
+	}); err != nil {
 		s.log.Warn("gateway session event failed",
 			slog.String("session_id", bastionSession.ID),
 			slog.String("event_type", "channel_opened"),
@@ -302,7 +329,11 @@ func (s *Service) handleSessionChannel(serverConn *ssh.ServerConn, newChannel ss
 			slog.String("error", err.Error()),
 		)
 	}
-	if err := s.sessionSvc.RecordEvent(context.Background(), bastionSession.ID, "proxy_opened", sessionPayload(opts)); err != nil {
+	if err := s.auditSvc.Record(context.Background(), auditapp.RecordSessionEventInput{
+		SessionID: bastionSession.ID,
+		EventType: "proxy_opened",
+		Payload:   sessionPayload(opts),
+	}); err != nil {
 		s.log.Warn("gateway session event failed",
 			slog.String("session_id", bastionSession.ID),
 			slog.String("event_type", "proxy_opened"),
@@ -319,7 +350,11 @@ func (s *Service) handleSessionChannel(serverConn *ssh.ServerConn, newChannel ss
 	if waitErr != nil {
 		s.failGatewaySession(bastionSession.ID, "proxy_closed", waitErr)
 	} else {
-		if err := s.sessionSvc.RecordEvent(context.Background(), bastionSession.ID, "proxy_closed", map[string]string{"exit_code": "0"}); err != nil {
+		if err := s.auditSvc.Record(context.Background(), auditapp.RecordSessionEventInput{
+			SessionID: bastionSession.ID,
+			EventType: "proxy_closed",
+			Payload:   map[string]string{"exit_code": "0"},
+		}); err != nil {
 			s.log.Warn("gateway session event failed",
 				slog.String("session_id", bastionSession.ID),
 				slog.String("event_type", "proxy_closed"),
@@ -735,7 +770,11 @@ func (s *Service) failGatewaySession(sessionID, eventType string, err error) {
 	if eventType == "proxy_closed" {
 		payload["exit_code"] = strconv.FormatUint(uint64(exitCodeFromError(err)), 10)
 	}
-	if eventErr := s.sessionSvc.RecordEvent(context.Background(), sessionID, eventType, payload); eventErr != nil {
+	if eventErr := s.auditSvc.Record(context.Background(), auditapp.RecordSessionEventInput{
+		SessionID: sessionID,
+		EventType: eventType,
+		Payload:   payload,
+	}); eventErr != nil {
 		s.log.Warn("gateway session event failed",
 			slog.String("session_id", sessionID),
 			slog.String("event_type", eventType),
@@ -837,16 +876,122 @@ func sendExitStatus(channel ssh.Channel, code uint32) error {
 	return err
 }
 
-func (s *Service) Shutdown(_ context.Context) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *Service) startRegistryLoop(listener net.Listener) error {
+	input := s.registryHeartbeatInput(listener)
+	gatewayNode, err := s.registrySvc.RegisterHeartbeat(context.Background(), input)
+	if err != nil {
+		return err
+	}
 
-	if s.listener == nil {
+	s.mu.Lock()
+	s.registryNodeKey = gatewayNode.NodeKey
+	s.registryStop = make(chan struct{})
+	stop := s.registryStop
+	s.mu.Unlock()
+
+	interval := s.cfg.Gateway.Registry.HeartbeatSec
+	if interval <= 0 {
+		interval = 15
+	}
+
+	s.registryWG.Add(1)
+	go func() {
+		defer s.registryWG.Done()
+		ticker := time.NewTicker(time.Duration(interval) * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				if _, heartbeatErr := s.registrySvc.RegisterHeartbeat(context.Background(), input); heartbeatErr != nil {
+					s.log.Warn("gateway registry heartbeat failed", slog.String("node_key", input.NodeKey), slog.String("error", heartbeatErr.Error()))
+				}
+			case <-stop:
+				return
+			}
+		}
+	}()
+
+	s.log.Info("gateway registry online",
+		slog.String("node_key", gatewayNode.NodeKey),
+		slog.String("node_name", gatewayNode.NodeName),
+		slog.String("advertise_addr", gatewayNode.AdvertiseAddr),
+		slog.String("zone", gatewayNode.Zone),
+	)
+	return nil
+}
+
+func (s *Service) stopRegistryLoop() {
+	s.mu.Lock()
+	stop := s.registryStop
+	nodeKey := s.registryNodeKey
+	s.registryStop = nil
+	s.registryNodeKey = ""
+	s.mu.Unlock()
+
+	if stop != nil {
+		close(stop)
+		s.registryWG.Wait()
+	}
+	if nodeKey != "" {
+		if err := s.registrySvc.MarkOffline(context.Background(), nodeKey); err != nil {
+			s.log.Warn("gateway registry offline update failed", slog.String("node_key", nodeKey), slog.String("error", err.Error()))
+		}
+	}
+}
+
+func (s *Service) registryHeartbeatInput(listener net.Listener) registryapp.RegisterHeartbeatInput {
+	hostname, err := os.Hostname()
+	if err != nil || strings.TrimSpace(hostname) == "" {
+		hostname = "gateway"
+	}
+	listenAddr := listener.Addr().String()
+	nodeName := strings.TrimSpace(s.cfg.Gateway.Registry.NodeName)
+	if nodeName == "" {
+		nodeName = hostname
+	}
+	nodeKey := strings.TrimSpace(s.cfg.Gateway.Registry.NodeKey)
+	if nodeKey == "" {
+		nodeKey = nodeName + "@" + listenAddr
+	}
+	advertiseAddr := strings.TrimSpace(s.cfg.Gateway.Registry.AdvertiseAddr)
+	if advertiseAddr == "" {
+		advertiseAddr = listenAddr
+	}
+	zone := strings.TrimSpace(s.cfg.Gateway.Registry.Zone)
+	if zone == "" {
+		zone = "default"
+	}
+
+	tags := pkg.ParseCSVList(s.cfg.Gateway.Registry.TagsCSV)
+	if len(tags) == 0 {
+		tags = []string{"ssh"}
+	}
+
+	return registryapp.RegisterHeartbeatInput{
+		NodeKey:       nodeKey,
+		NodeName:      nodeName,
+		RuntimeType:   "ssh",
+		AdvertiseAddr: advertiseAddr,
+		SSHListenAddr: listenAddr,
+		Zone:          zone,
+		Tags:          tags,
+	}
+}
+
+func (s *Service) Shutdown(_ context.Context) error {
+	s.stopRegistryLoop()
+
+	s.mu.Lock()
+	listener := s.listener
+	s.listener = nil
+	s.mu.Unlock()
+
+	if listener == nil {
 		return nil
 	}
 
-	err := s.listener.Close()
-	s.listener = nil
+	err := listener.Close()
 	if errors.Is(err, net.ErrClosed) {
 		return nil
 	}

@@ -151,6 +151,5 @@ type StartSessionInput struct {
 type SessionRuntimeService interface {
 	Start(ctx context.Context, in StartSessionInput) (bastiondomain.Session, error)
 	MarkActive(ctx context.Context, sessionID string) error
-	RecordEvent(ctx context.Context, sessionID, eventType string, payload map[string]string) error
 	Finish(ctx context.Context, sessionID, status string) error
 }

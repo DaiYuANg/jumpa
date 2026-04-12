@@ -61,6 +61,16 @@ bastion:
   access:
     approval_ttl_min: 30
 
+gateway:
+  registry:
+    node_name: ""
+    node_key: ""
+    advertise_addr: ""
+    zone: "default"
+    tags_csv: "ssh"
+    heartbeat_sec: 15
+    offline_after_sec: 60
+
 audit:
   store_command_input: true
   store_replay_stream: true

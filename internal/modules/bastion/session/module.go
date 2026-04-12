@@ -11,8 +11,8 @@ var Module = dix.NewModule("bastion-session",
 		dix.Provider1(func(sessionRepo ports.SessionRepository) application.SessionService {
 			return application.NewSessionService(sessionRepo)
 		}),
-		dix.Provider2(func(sessionRepo ports.SessionRepository, eventRepo ports.SessionEventRepository) application.SessionRuntimeService {
-			return application.NewSessionRuntimeService(sessionRepo, eventRepo)
+		dix.Provider1(func(sessionRepo ports.SessionRepository) application.SessionRuntimeService {
+			return application.NewSessionRuntimeService(sessionRepo)
 		}),
 	),
 )

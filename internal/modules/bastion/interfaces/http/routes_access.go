@@ -10,9 +10,9 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
+func registerAccessRoutes(api *httpx.Group, policySvc application.PolicyService, requestSvc application.AccessRequestService) {
 	httpx.MustGroupGet(api, "/access-policies", func(ctx context.Context, _ *struct{}) (*apiendpoints.DynamicOutput, error) {
-		items, err := e.policySvc.ListPolicies(ctx)
+		items, err := policySvc.ListPolicies(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -20,7 +20,7 @@ func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
 	}, huma.OperationTags("access"))
 
 	httpx.MustGroupGet(api, "/access-policies/{id}", func(ctx context.Context, input *apiendpoints.ByIDInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.policySvc.GetPolicy(ctx, input.ID)
+		item, err := policySvc.GetPolicy(ctx, input.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +31,7 @@ func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
 	}, huma.OperationTags("access"))
 
 	httpx.MustGroupPost(api, "/access-policies", func(ctx context.Context, input *createPolicyInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.policySvc.CreatePolicy(ctx, application.CreatePolicyInput{
+		item, err := policySvc.CreatePolicy(ctx, application.CreatePolicyInput{
 			Name:              input.Body.Name,
 			SubjectType:       input.Body.SubjectType,
 			SubjectRef:        input.Body.SubjectName,
@@ -49,7 +49,7 @@ func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
 	}, huma.OperationTags("access"))
 
 	httpx.MustGroupPatch(api, "/access-policies/{id}", func(ctx context.Context, input *patchPolicyInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.policySvc.UpdatePolicy(ctx, input.ID, application.UpdatePolicyInput{
+		item, err := policySvc.UpdatePolicy(ctx, input.ID, application.UpdatePolicyInput{
 			Name:              input.Body.Name,
 			SubjectType:       input.Body.SubjectType,
 			SubjectRef:        input.Body.SubjectName,
@@ -70,7 +70,7 @@ func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
 	}, huma.OperationTags("access"))
 
 	httpx.MustGroupDelete(api, "/access-policies/{id}", func(ctx context.Context, input *apiendpoints.ByIDInput) (*apiendpoints.DynamicOutput, error) {
-		deleted, err := e.policySvc.DeletePolicy(ctx, input.ID)
+		deleted, err := policySvc.DeletePolicy(ctx, input.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +82,7 @@ func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
 
 	httpx.MustGroupGet(api, "/access-requests", func(ctx context.Context, input *listAccessRequestsInput) (*apiendpoints.DynamicOutput, error) {
 		page, pageSize, offset := normalizePageRequest(input.Page, input.PageSize)
-		items, total, err := e.requestSvc.ListRequests(ctx, application.ListAccessRequestsInput{
+		items, total, err := requestSvc.ListRequests(ctx, application.ListAccessRequestsInput{
 			Status: input.Status,
 			Limit:  pageSize,
 			Offset: offset,
@@ -100,7 +100,7 @@ func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
 	}, huma.OperationTags("access"))
 
 	httpx.MustGroupGet(api, "/access-requests/{id}", func(ctx context.Context, input *apiendpoints.ByIDInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.requestSvc.GetRequest(ctx, input.ID)
+		item, err := requestSvc.GetRequest(ctx, input.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +111,7 @@ func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
 	}, huma.OperationTags("access"))
 
 	httpx.MustGroupPost(api, "/access-requests/{id}/approve", func(ctx context.Context, input *reviewAccessRequestInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.requestSvc.Approve(ctx, input.ID, input.Body.Reviewer, input.Body.Comment)
+		item, err := requestSvc.Approve(ctx, input.ID, input.Body.Reviewer, input.Body.Comment)
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +122,7 @@ func (e *BastionEndpoint) registerAccessRoutes(api *httpx.Group) {
 	}, huma.OperationTags("access"))
 
 	httpx.MustGroupPost(api, "/access-requests/{id}/reject", func(ctx context.Context, input *reviewAccessRequestInput) (*apiendpoints.DynamicOutput, error) {
-		item, err := e.requestSvc.Reject(ctx, input.ID, input.Body.Reviewer, input.Body.Comment)
+		item, err := requestSvc.Reject(ctx, input.ID, input.Body.Reviewer, input.Body.Comment)
 		if err != nil {
 			return nil, err
 		}

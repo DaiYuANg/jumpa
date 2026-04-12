@@ -7,7 +7,7 @@ import (
 
 	"github.com/DaiYuANg/arcgo/dbx"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
-	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
+	"github.com/DaiYuANg/jumpa/internal/modules/audit/ports"
 )
 
 type sessionEventRow struct {

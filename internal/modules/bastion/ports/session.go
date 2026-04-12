@@ -30,19 +30,8 @@ type CreateSessionInput struct {
 	StartedAt     time.Time
 }
 
-type CreateSessionEventInput struct {
-	SessionID string
-	EventType string
-	Payload   *string
-	CreatedAt time.Time
-}
-
 type SessionRepository interface {
 	ListSessions(ctx context.Context) ([]SessionRecord, error)
 	CreateSession(ctx context.Context, in CreateSessionInput) (string, error)
 	UpdateSessionStatus(ctx context.Context, id, status string, endedAt *time.Time) error
-}
-
-type SessionEventRepository interface {
-	CreateSessionEvent(ctx context.Context, in CreateSessionEventInput) error
 }

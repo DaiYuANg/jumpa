@@ -9,6 +9,8 @@ This project uses a DDD-style modular architecture for a bastion and jump-host c
 - `cmd/migrate`: migration entrypoint (embedded SQL migrations).
 - `internal/modules/iam`: core IAM domain module.
 - `internal/modules/bastion`: bastion control-plane module.
+- `internal/modules/audit`: runtime audit event module for session-side event persistence.
+- `internal/modules/gatewayregistry`: control-plane registry for gateway nodes and heartbeats.
 - `internal/identity`: identity source resolution for application-managed and OS-backed login modes.
 - `internal/api`: API aggregation for system/auth/dashboard and module endpoint composition.
 - `internal/http`: Fiber + Huma server runtime and authz middleware wiring.
@@ -47,9 +49,30 @@ The shared business code remains grouped by layer under `application/*`, `domain
   - Host, access policy, session, access request, and overview models.
 - `application`
   - Services for overview, assets, access policies, access requests, and sessions.
+- `infrastructure/persistence`
+  - `wire/asset`, `wire/access`, and `wire/session` split repository provider registration by control-plane slice.
+  - shared `dbx` repository implementations remain under `infrastructure/persistence/dbx`.
 - `interfaces/http`
-  - one `BastionEndpoint` registration surface, split internally into overview, asset, access, and session route files.
+  - `OverviewEndpoint`, `AssetEndpoint`, `AccessEndpoint`, and `SessionEndpoint` are wired independently, then aggregated as a bastion endpoint slice for API composition.
   - `/api/bastion/overview`, `/api/assets/hosts`, `/api/access-policies`, `/api/access-requests`, `/api/sessions`.
+
+`internal/modules/audit` is now a separate bounded context for runtime event capture.
+
+- `application`
+  - `SessionEventService` receives gateway/runtime event writes.
+- `infrastructure/persistence`
+  - `dbx` repository persists session events into `bastion_session_events`.
+- `ports`
+  - repository contracts for audit event storage.
+
+`internal/modules/gatewayregistry` is the control-plane registry for `1 server + N gateway`.
+
+- `application`
+  - `GatewayService` handles register/heartbeat, offline transitions, and control-plane reads.
+- `infrastructure/persistence`
+  - `dbx` repository persists gateway node state into `gateway_registry_nodes`.
+- `interfaces/http`
+  - exposes `GET /api/gateways` and `GET /api/gateways/{id}`.
 
 The gateway runtime currently uses a pragmatic login convention:
 
@@ -84,6 +107,8 @@ Across system:
 
 - `internal/http` depends on `internal/api` and auth middleware.
 - `internal/api` composes system/auth/dashboard endpoints plus IAM endpoints from `modules/iam/interfaces/http`.
+- `internal/gateway` depends on bastion for target/access/session lifecycle and on audit for runtime event capture.
+- `internal/gateway` also depends on `gatewayregistry` for node registration and heartbeat.
 
 ## Module Wiring (DI / dix)
 
@@ -93,8 +118,12 @@ Across system:
   - persistence module imports
   - event bus integration where needed.
 - `internal/modules/bastion/module.go` imports `overview`, `asset`, `access`, and `session` submodules, plus shared persistence/config dependencies.
+- `internal/modules/bastion/infrastructure/persistence/wire/module.go` imports `wire/asset`, `wire/access`, and `wire/session` submodules.
+- `internal/modules/audit/module.go` wires audit application services and audit persistence providers.
+- `internal/modules/gatewayregistry/module.go` wires gateway registry services and persistence providers.
 - `internal/modules/iam/interfaces/http/module.go` wires IAM endpoints.
-- `internal/modules/bastion/interfaces/http/module.go` wires bastion endpoints.
+- `internal/modules/bastion/interfaces/http/module.go` wires bastion endpoint slices.
+- `internal/modules/gatewayregistry/interfaces/http/module.go` wires gateway registry endpoints.
 - `internal/api/module.go` aggregates endpoint slices into one `[]httpx.Endpoint`.
 
 ## API Response Conventions
@@ -123,7 +152,6 @@ Planned next bounded contexts after this landing:
 - `internal/modules/assets`
 - `internal/modules/access`
 - `internal/modules/session`
-- `internal/modules/audit`
 
 Recommended runtime split:
 

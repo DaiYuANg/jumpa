@@ -7,6 +7,7 @@ A bastion and jump-host control-plane backend based on the ArcGo ecosystem, orga
 - Multi-database support via config: `sqlite`, `mariadb`, `postgres`
 - Fiber-based HTTP runtime with `httpx` endpoint registration
 - Dedicated `cmd/gateway` runtime for the bastion SSH entrypoint
+- Built-in gateway registry for `1 server + N gateway` topologies
 - JWT auth flow (`login`, `refresh`, `logout`, `me`) with revocation support
 - Valkey integration via `kvx` (including distributed scheduler lock use-cases)
 - Embedded SQL migrations and dedicated `cmd/migrate` process
@@ -101,6 +102,7 @@ Target host key verification:
 Useful early bastion endpoints:
 
 - `GET /api/bastion/overview`
+- `GET /api/gateways`
 - `GET /api/assets/hosts`
 - `GET /api/access-policies`
 - `GET /api/access-requests`
@@ -116,6 +118,13 @@ Approval workflow defaults:
 
 - Approved access requests expire after `APP_BASTION_ACCESS_APPROVAL_TTL_MIN` minutes
 - Approved access requests are consumed on the first successful SSH session start
+
+Gateway registry defaults:
+
+- `cmd/gateway` registers itself into `gateway_registry_nodes` on startup
+- Gateway heartbeats run every `APP_GATEWAY_REGISTRY_HEARTBEAT_SEC`
+- Nodes are treated as `stale` after `APP_GATEWAY_REGISTRY_OFFLINE_AFTER_SEC` without heartbeat
+- Shutdown marks the node `offline` when possible
 
 ## Common Commands
 
@@ -149,6 +158,8 @@ Build outputs (by default):
 - `cmd/migrate`: migration bootstrap
 - `internal/modules/iam`: IAM bounded context
 - `internal/modules/bastion`: bastion control-plane module
+- `internal/modules/audit`: runtime audit event module
+- `internal/modules/gatewayregistry`: gateway registration and heartbeat module
 - `internal/identity`: application-managed vs OS-backed identity source selection
   - `domain`
   - `application`
@@ -167,4 +178,5 @@ Build outputs (by default):
 - The gateway resolves target hosts and host accounts from `bastion_hosts` and `bastion_host_accounts`, then opens a downstream SSH client connection.
 - Access policy enforcement is wired into the live proxy path, with `subjectType` support for `user`, `principal`, `email`, `role`, and `*`.
 - Policies marked `approvalRequired=true` create bastion access requests in `bastion_access_requests`; approved requests now expire and are consumed on first successful session establishment.
+- Gateway nodes now self-register and heartbeat into `gateway_registry_nodes`, and control-plane reads are exposed at `GET /api/gateways`.
 - Add new business capabilities under `internal/modules/*` in the same layered style.
