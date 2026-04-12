@@ -102,7 +102,10 @@ func (m Model) loadCmd() tea.Cmd {
 		if err != nil {
 			return loadMsg{err: err}
 		}
-		requests, err := m.client.AccessRequests(ctx)
+		requests, err := m.client.AccessRequests(ctx, api.AccessRequestQuery{
+			Page:     1,
+			PageSize: 50,
+		})
 		if err != nil {
 			return loadMsg{err: err}
 		}
@@ -118,7 +121,7 @@ func (m Model) loadCmd() tea.Cmd {
 		return loadMsg{data: snapshot{
 			Overview: overview,
 			Hosts:    hosts,
-			Requests: requests,
+			Requests: requests.Items,
 			Sessions: sessions,
 			Gateways: gateways,
 		}}

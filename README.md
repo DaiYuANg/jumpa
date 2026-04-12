@@ -107,10 +107,26 @@ Target host key verification:
 
 CLI runtime notes:
 
-- `cmd/cli` uses the same ArcGo-style DI/runtime approach as `cmd/server` and `cmd/gateway`
+- `cmd/cli` now uses `cobra` as the command surface, and each leaf command builds its own independent `dix` app
+- `cmd/cli` still follows the same ArcGo-style DI/runtime approach as `cmd/server` and `cmd/gateway`
 - CLI config loads from `.env` plus `APP_CLI_*` environment variables
-- Supported overrides: `-api`, `-gateway`, `-email`, `-password`, `-principal`, `-ssh`, `-alt-screen`
+- Shared overrides are exposed as persistent flags: `--api`, `--gateway`, `--email`, `--password`, `--principal`, `--ssh`, `--alt-screen`
+- Current leaf commands: `ui`, `hosts`, `sessions`, `requests`, `gateways`, `connect`
 - The CLI reuses the existing control-plane HTTP APIs and launches the local `ssh` binary for actual terminal sessions
+- The CLI now uses `arcgo/clientx/http` for control-plane requests, while keeping command wiring and DTOs inside `internal/cli`
+
+CLI command examples:
+
+```bash
+go run ./cmd/cli
+go run ./cmd/cli ui
+go run ./cmd/cli hosts --json
+go run ./cmd/cli requests --status pending --page 1 --page-size 20
+go run ./cmd/cli requests approve 123 --comment "approved for maintenance"
+go run ./cmd/cli requests reject 123 --comment "missing ticket"
+go run ./cmd/cli gateways
+go run ./cmd/cli connect prod-web-01 ubuntu
+```
 
 Useful early bastion endpoints:
 

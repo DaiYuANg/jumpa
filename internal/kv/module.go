@@ -23,17 +23,20 @@ var Module = dix.NewModule("kv",
 	dix.WithModuleImports(config2.Module),
 	dix.WithModuleProviders(
 		dix.Provider2(func(cfg config2.AppConfig, log *slog.Logger) kvx.Client {
+			if !cfg.Valkey.Enabled {
+				log.Info("valkey disabled; using noop kv client")
+				return newNoopClient()
+			}
+
 			opts := toKVXClientOptions(cfg)
 			client, err := adaptervalkey.New(opts)
 			if err != nil {
 				panic(err)
 			}
-			if cfg.Valkey.Enabled {
-				if _, err := client.Exists(context.Background(), "health:ping"); err != nil {
-					panic(err)
-				}
-				log.Info("valkey connected", slog.String("addr", opts.Addrs[0]), slog.Int("db", opts.DB))
+			if _, err := client.Exists(context.Background(), "health:ping"); err != nil {
+				panic(err)
 			}
+			log.Info("valkey connected", slog.String("addr", opts.Addrs[0]), slog.Int("db", opts.DB))
 			return client
 		}),
 	),

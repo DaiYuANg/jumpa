@@ -8,31 +8,33 @@ import (
 	"io"
 	"log/slog"
 	"net/url"
-	"os"
-	"os/exec"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
 	collectionlist "github.com/DaiYuANg/arcgo/collectionx/list"
 	cliapi "github.com/DaiYuANg/jumpa/internal/cli/api"
-	cliapp "github.com/DaiYuANg/jumpa/internal/cli/app"
 	"github.com/samber/lo"
+	"github.com/samber/mo"
 	"golang.org/x/term"
 )
 
-type Runner struct {
+type SessionResolver struct {
 	cfg    Config
 	log    *slog.Logger
 	client *cliapi.Client
 	stdin  io.Reader
 	stdout io.Writer
-	stderr io.Writer
 }
 
-type loginInput struct {
-	Email     string
-	Password  string
-	Principal string
+type ResolveOptions struct {
+	NeedPrincipal bool
+	NeedOverview  bool
+}
+
+type SessionContext struct {
+	Login       cliapi.LoginResponse
+	Overview    mo.Option[cliapi.Overview]
+	Principal   mo.Option[string]
+	GatewayAddr mo.Option[string]
 }
 
 type promptField struct {
@@ -42,72 +44,61 @@ type promptField struct {
 	Assign   func(string)
 }
 
-func NewRunner(cfg Config, log *slog.Logger, client *cliapi.Client) *Runner {
-	return &Runner{
+func NewSessionResolver(cfg Config, log *slog.Logger, client *cliapi.Client, streams stdio) *SessionResolver {
+	return &SessionResolver{
 		cfg:    cfg,
 		log:    log,
 		client: client,
-		stdin:  os.Stdin,
-		stdout: os.Stdout,
-		stderr: os.Stderr,
+		stdin:  streams.In,
+		stdout: streams.Out,
 	}
 }
 
-func (r *Runner) Run(ctx context.Context) error {
-	input, err := r.resolveLoginInput()
+func (r *SessionResolver) Resolve(ctx context.Context, opts ResolveOptions) (SessionContext, error) {
+	creds, err := r.resolveCredentials(opts.NeedPrincipal)
 	if err != nil {
-		return err
+		return SessionContext{}, err
 	}
 
-	login, err := r.client.Login(ctx, input.Email, input.Password)
+	r.log.Debug("authenticating control-plane session", slog.String("email", creds.Email))
+	login, err := r.client.Login(ctx, creds.Email, creds.Password)
 	if err != nil {
-		return fmt.Errorf("cli login: %w", err)
+		return SessionContext{}, fmt.Errorf("cli login: %w", err)
+	}
+
+	result := SessionContext{
+		Login:     login,
+		Principal: optionString(creds.Principal),
+	}
+
+	if !opts.NeedOverview {
+		return result, nil
 	}
 
 	overview, err := r.client.Overview(ctx)
 	if err != nil {
-		return fmt.Errorf("cli overview: %w", err)
+		return SessionContext{}, fmt.Errorf("cli overview: %w", err)
 	}
 
-	gatewayAddr := resolveGatewayAddr(r.cfg.GatewayAddr, r.client.BaseURL(), overview.SSHListenAddr)
-	model := cliapp.New(r.client, cliapp.Options{
-		Principal:   input.Principal,
-		GatewayAddr: gatewayAddr,
-		Me:          login.User,
-		AltScreen:   r.cfg.AltScreen,
-	})
-
-	finalModel, err := tea.NewProgram(model).Run()
-	if err != nil {
-		return fmt.Errorf("cli ui: %w", err)
-	}
-
-	typed, ok := finalModel.(cliapp.Model)
-	if !ok {
-		return nil
-	}
-
-	launch := typed.LaunchRequest()
-	if launch == nil {
-		return nil
-	}
-
-	return r.runSSH(*launch)
+	result.Overview = mo.Some(overview)
+	result.GatewayAddr = optionString(resolveGatewayAddr(r.cfg.GatewayAddr, r.client.BaseURL(), overview.SSHListenAddr))
+	return result, nil
 }
 
-func (r *Runner) resolveLoginInput() (loginInput, error) {
-	input := loginInput{
+type credentials struct {
+	Email     string
+	Password  string
+	Principal string
+}
+
+func (r *SessionResolver) resolveCredentials(needPrincipal bool) (credentials, error) {
+	input := credentials{
 		Email:     strings.TrimSpace(r.cfg.Email),
 		Password:  r.cfg.Password,
 		Principal: strings.TrimSpace(r.cfg.Principal),
 	}
 
-	defaultPrincipal := lo.Ternary(
-		trimmedOption(input.Principal).IsPresent(),
-		input.Principal,
-		localPart(input.Email),
-	)
-
+	defaultPrincipal := lo.Ternary(optionString(input.Principal).IsPresent(), input.Principal, localPart(input.Email))
 	fields := collectionlist.NewList(
 		promptField{
 			Label:    "Email",
@@ -124,41 +115,42 @@ func (r *Runner) resolveLoginInput() (loginInput, error) {
 				input.Password = value
 			},
 		},
-		promptField{
+	)
+	if needPrincipal {
+		fields.Add(promptField{
 			Label:    "SSH Principal",
 			Fallback: defaultPrincipal,
 			Assign: func(value string) {
 				input.Principal = value
 			},
-		},
-	)
+		})
+	}
 
 	reader := bufio.NewReader(r.stdin)
 	fields.Range(func(_ int, field promptField) bool {
-		if trimmedOption(field.Fallback).IsPresent() {
-			field.Assign(field.Fallback)
+		if optionString(field.Fallback).IsPresent() {
+			field.Assign(strings.TrimSpace(field.Fallback))
 			return true
 		}
 		if field.Secret {
-			field.Assign(promptSecret(r.stdout, field.Label))
+			field.Assign(promptSecret(r.stdin, r.stdout, field.Label))
 			return true
 		}
-
 		field.Assign(promptText(reader, r.stdout, field.Label, field.Fallback))
 		return true
 	})
 
-	if trimmedOption(input.Email).IsAbsent() {
-		return loginInput{}, errors.New("email is required")
+	if optionString(input.Email).IsAbsent() {
+		return credentials{}, errors.New("email is required")
 	}
-	if trimmedOption(input.Password).IsAbsent() {
-		return loginInput{}, errors.New("password is required")
+	if optionString(input.Password).IsAbsent() {
+		return credentials{}, errors.New("password is required")
 	}
-	if trimmedOption(input.Principal).IsAbsent() {
+	if needPrincipal && optionString(input.Principal).IsAbsent() {
 		input.Principal = localPart(input.Email)
 	}
-	if trimmedOption(input.Principal).IsAbsent() {
-		return loginInput{}, errors.New("principal is required")
+	if needPrincipal && optionString(input.Principal).IsAbsent() {
+		return credentials{}, errors.New("principal is required")
 	}
 
 	return input, nil
@@ -179,9 +171,14 @@ func promptText(reader *bufio.Reader, writer io.Writer, label, fallback string) 
 	return value
 }
 
-func promptSecret(writer io.Writer, label string) string {
+func promptSecret(reader io.Reader, writer io.Writer, label string) string {
 	_, _ = fmt.Fprintf(writer, "%s: ", label)
-	raw, _ := term.ReadPassword(int(os.Stdin.Fd()))
+	file, ok := reader.(interface{ Fd() uintptr })
+	if !ok {
+		_, _ = fmt.Fprintln(writer)
+		return ""
+	}
+	raw, _ := term.ReadPassword(int(file.Fd()))
 	_, _ = fmt.Fprintln(writer)
 	return strings.TrimSpace(string(raw))
 }
@@ -211,19 +208,6 @@ func resolveGatewayAddr(override, apiBase, sshListen string) string {
 	return sshListen
 }
 
-func (r *Runner) runSSH(req cliapp.LaunchRequest) error {
-	target := fmt.Sprintf("%s@%s", req.Target, req.GatewayHost)
-	binary := trimmedOption(r.cfg.SSHBinary).OrElse("ssh")
-	cmd := exec.Command(binary, "-p", req.GatewayPort, target)
-	cmd.Stdin = r.stdin
-	cmd.Stdout = r.stdout
-	cmd.Stderr = r.stderr
-
-	r.log.Info("launching ssh session",
-		slog.String("binary", binary),
-		slog.String("target", target),
-		slog.String("port", req.GatewayPort),
-	)
-
-	return cmd.Run()
+func optionString(value string) mo.Option[string] {
+	return StringOverride(value)
 }

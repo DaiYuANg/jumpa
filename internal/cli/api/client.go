@@ -1,47 +1,27 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strings"
-	"time"
-)
 
-type ClientOption func(*Client)
+	clienthttp "github.com/DaiYuANg/arcgo/clientx/http"
+	"github.com/samber/mo"
+)
 
 type Client struct {
 	baseURL      string
-	httpClient   *http.Client
+	httpClient   clienthttp.Client
 	accessToken  string
 	refreshToken string
 }
 
-func NewClient(baseURL string, opts ...ClientOption) *Client {
-	client := &Client{
-		baseURL: strings.TrimRight(strings.TrimSpace(baseURL), "/"),
-		httpClient: &http.Client{
-			Timeout: 15 * time.Second,
-		},
-	}
-	for _, opt := range opts {
-		if opt != nil {
-			opt(client)
-		}
-	}
-	return client
-}
-
-func WithHTTPClient(httpClient *http.Client) ClientOption {
-	return func(client *Client) {
-		if client == nil || httpClient == nil {
-			return
-		}
-		client.httpClient = httpClient
+func NewClient(baseURL string, httpClient clienthttp.Client) *Client {
+	return &Client{
+		baseURL:    strings.TrimRight(strings.TrimSpace(baseURL), "/"),
+		httpClient: httpClient,
 	}
 }
 
@@ -55,7 +35,7 @@ func (c *Client) Login(ctx context.Context, email, password string) (LoginRespon
 		"password": password,
 	}
 	var out Result[LoginResponse]
-	if err := c.doJSON(ctx, http.MethodPost, "/api/auth/login", payload, false, &out); err != nil {
+	if err := c.doJSON(ctx, "POST", "/api/auth/login", payload, false, &out); err != nil {
 		return LoginResponse{}, err
 	}
 	c.accessToken = out.Data.AccessToken
@@ -65,7 +45,7 @@ func (c *Client) Login(ctx context.Context, email, password string) (LoginRespon
 
 func (c *Client) Overview(ctx context.Context) (Overview, error) {
 	var out Result[Overview]
-	if err := c.doJSON(ctx, http.MethodGet, "/api/bastion/overview", nil, true, &out); err != nil {
+	if err := c.doJSON(ctx, "GET", "/api/bastion/overview", nil, true, &out); err != nil {
 		return Overview{}, err
 	}
 	return out.Data, nil
@@ -73,23 +53,53 @@ func (c *Client) Overview(ctx context.Context) (Overview, error) {
 
 func (c *Client) Hosts(ctx context.Context) ([]Host, error) {
 	var out Result[[]Host]
-	if err := c.doJSON(ctx, http.MethodGet, "/api/assets/hosts", nil, true, &out); err != nil {
+	if err := c.doJSON(ctx, "GET", "/api/assets/hosts", nil, true, &out); err != nil {
 		return nil, err
 	}
 	return out.Data, nil
 }
 
-func (c *Client) AccessRequests(ctx context.Context) ([]AccessRequest, error) {
-	var out Result[PageResult[AccessRequest]]
-	if err := c.doJSON(ctx, http.MethodGet, "/api/access-requests?page=1&pageSize=50", nil, true, &out); err != nil {
-		return nil, err
+type AccessRequestQuery struct {
+	Status   mo.Option[string]
+	Page     int
+	PageSize int
+}
+
+func (c *Client) AccessRequests(ctx context.Context, query AccessRequestQuery) (PageResult[AccessRequest], error) {
+	params := url.Values{}
+	query.Status.ForEach(func(status string) {
+		params.Set("status", status)
+	})
+	if query.Page > 0 {
+		params.Set("page", fmt.Sprintf("%d", query.Page))
 	}
-	return out.Data.Items, nil
+	if query.PageSize > 0 {
+		params.Set("pageSize", fmt.Sprintf("%d", query.PageSize))
+	}
+
+	path := "/api/access-requests"
+	if queryString := params.Encode(); queryString != "" {
+		path += "?" + queryString
+	}
+
+	var out Result[PageResult[AccessRequest]]
+	if err := c.doJSON(ctx, "GET", path, nil, true, &out); err != nil {
+		return PageResult[AccessRequest]{}, err
+	}
+	return out.Data, nil
+}
+
+func (c *Client) ApproveAccessRequest(ctx context.Context, id, reviewer string, comment mo.Option[string]) (AccessRequest, error) {
+	return c.reviewAccessRequest(ctx, id, "/approve", reviewer, comment)
+}
+
+func (c *Client) RejectAccessRequest(ctx context.Context, id, reviewer string, comment mo.Option[string]) (AccessRequest, error) {
+	return c.reviewAccessRequest(ctx, id, "/reject", reviewer, comment)
 }
 
 func (c *Client) Sessions(ctx context.Context) ([]Session, error) {
 	var out Result[[]Session]
-	if err := c.doJSON(ctx, http.MethodGet, "/api/sessions", nil, true, &out); err != nil {
+	if err := c.doJSON(ctx, "GET", "/api/sessions", nil, true, &out); err != nil {
 		return nil, err
 	}
 	return out.Data, nil
@@ -97,54 +107,46 @@ func (c *Client) Sessions(ctx context.Context) ([]Session, error) {
 
 func (c *Client) Gateways(ctx context.Context) ([]Gateway, error) {
 	var out Result[[]Gateway]
-	if err := c.doJSON(ctx, http.MethodGet, "/api/gateways", nil, true, &out); err != nil {
+	if err := c.doJSON(ctx, "GET", "/api/gateways", nil, true, &out); err != nil {
 		return nil, err
 	}
 	return out.Data, nil
 }
 
+func (c *Client) reviewAccessRequest(ctx context.Context, id, action, reviewer string, comment mo.Option[string]) (AccessRequest, error) {
+	payload := map[string]any{
+		"reviewer": strings.TrimSpace(reviewer),
+	}
+	comment.ForEach(func(value string) {
+		payload["comment"] = value
+	})
+
+	var out Result[AccessRequest]
+	if err := c.doJSON(ctx, "POST", "/api/access-requests/"+strings.TrimSpace(id)+action, payload, true, &out); err != nil {
+		return AccessRequest{}, err
+	}
+	return out.Data, nil
+}
+
 func (c *Client) doJSON(ctx context.Context, method, path string, body any, withAuth bool, out any) error {
-	target, err := url.JoinPath(c.baseURL, path)
-	if err != nil {
-		return err
-	}
-	if strings.Contains(path, "?") {
-		target = c.baseURL + path
-	}
+	request := c.httpClient.R().
+		SetContext(ctx).
+		SetHeader("Accept", "application/json")
 
-	var reader io.Reader
 	if body != nil {
-		raw, marshalErr := json.Marshal(map[string]any{"body": body})
-		if marshalErr != nil {
-			return marshalErr
-		}
-		reader = bytes.NewReader(raw)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, target, reader)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Accept", "application/json")
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		request.SetHeader("Content-Type", "application/json")
+		request.SetBody(map[string]any{"body": body})
 	}
 	if withAuth && c.accessToken != "" {
-		req.Header.Set("Authorization", "Bearer "+c.accessToken)
+		request.SetHeader("Authorization", "Bearer "+c.accessToken)
 	}
 
-	resp, err := c.httpClient.Do(req)
+	response, err := c.httpClient.Execute(ctx, request, method, path)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = resp.Body.Close() }()
-
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
+	if response.IsError() {
+		return fmt.Errorf("request failed: %s", strings.TrimSpace(response.String()))
 	}
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("request failed: %s", strings.TrimSpace(string(raw)))
-	}
-	return json.Unmarshal(raw, out)
+	return json.Unmarshal(response.Bytes(), out)
 }
