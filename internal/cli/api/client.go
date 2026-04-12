@@ -59,6 +59,14 @@ func (c *Client) Hosts(ctx context.Context) ([]Host, error) {
 	return out.Data, nil
 }
 
+func (c *Client) Host(ctx context.Context, id string) (Host, error) {
+	var out Result[Host]
+	if err := c.doJSON(ctx, "GET", "/api/assets/hosts/"+strings.TrimSpace(id), nil, true, &out); err != nil {
+		return Host{}, err
+	}
+	return out.Data, nil
+}
+
 type AccessRequestQuery struct {
 	Status   mo.Option[string]
 	Page     int
@@ -105,10 +113,26 @@ func (c *Client) Sessions(ctx context.Context) ([]Session, error) {
 	return out.Data, nil
 }
 
+func (c *Client) Session(ctx context.Context, id string) (Session, error) {
+	var out Result[Session]
+	if err := c.doJSON(ctx, "GET", "/api/sessions/"+strings.TrimSpace(id), nil, true, &out); err != nil {
+		return Session{}, err
+	}
+	return out.Data, nil
+}
+
 func (c *Client) Gateways(ctx context.Context) ([]Gateway, error) {
 	var out Result[[]Gateway]
 	if err := c.doJSON(ctx, "GET", "/api/gateways", nil, true, &out); err != nil {
 		return nil, err
+	}
+	return out.Data, nil
+}
+
+func (c *Client) Gateway(ctx context.Context, id string) (Gateway, error) {
+	var out Result[Gateway]
+	if err := c.doJSON(ctx, "GET", "/api/gateways/"+strings.TrimSpace(id), nil, true, &out); err != nil {
+		return Gateway{}, err
 	}
 	return out.Data, nil
 }

@@ -121,10 +121,13 @@ CLI command examples:
 go run ./cmd/cli
 go run ./cmd/cli ui
 go run ./cmd/cli hosts --json
+go run ./cmd/cli hosts get 123
 go run ./cmd/cli requests --status pending --page 1 --page-size 20
 go run ./cmd/cli requests approve 123 --comment "approved for maintenance"
 go run ./cmd/cli requests reject 123 --comment "missing ticket"
 go run ./cmd/cli gateways
+go run ./cmd/cli gateways get 123
+go run ./cmd/cli sessions get 123
 go run ./cmd/cli connect prod-web-01 ubuntu
 ```
 

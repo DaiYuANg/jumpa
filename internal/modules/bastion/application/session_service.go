@@ -6,6 +6,7 @@ import (
 
 	bastiondomain "github.com/DaiYuANg/jumpa/internal/modules/bastion/domain"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
+	"github.com/samber/mo"
 )
 
 type sessionService struct {
@@ -30,6 +31,17 @@ func (s *sessionService) ListSessions(ctx context.Context) ([]bastiondomain.Sess
 		out[i] = toDomainSession(it)
 	}
 	return out, nil
+}
+
+func (s *sessionService) GetSession(ctx context.Context, id string) (mo.Option[bastiondomain.Session], error) {
+	item, err := s.sessionRepo.GetSessionByID(ctx, id)
+	if err != nil {
+		return mo.None[bastiondomain.Session](), err
+	}
+	if item.IsAbsent() {
+		return mo.None[bastiondomain.Session](), nil
+	}
+	return mo.Some(toDomainSession(item.MustGet())), nil
 }
 
 func (s *sessionService) Start(ctx context.Context, in StartSessionInput) (bastiondomain.Session, error) {

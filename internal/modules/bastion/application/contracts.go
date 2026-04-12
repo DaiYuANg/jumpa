@@ -123,6 +123,7 @@ type UpdatePolicyInput struct {
 
 type SessionService interface {
 	ListSessions(ctx context.Context) ([]bastiondomain.Session, error)
+	GetSession(ctx context.Context, id string) (mo.Option[bastiondomain.Session], error)
 }
 
 type ListAccessRequestsInput struct {

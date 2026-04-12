@@ -63,6 +63,32 @@ type AccessRequestReviewRunner struct {
 	options  AccessRequestReviewOptions
 }
 
+type DetailOptions struct {
+	ID   string
+	JSON bool
+}
+
+type HostDetailRunner struct {
+	out      io.Writer
+	client   *api.Client
+	sessions *SessionResolver
+	options  DetailOptions
+}
+
+type SessionDetailRunner struct {
+	out      io.Writer
+	client   *api.Client
+	sessions *SessionResolver
+	options  DetailOptions
+}
+
+type GatewayDetailRunner struct {
+	out      io.Writer
+	client   *api.Client
+	sessions *SessionResolver
+	options  DetailOptions
+}
+
 func NewHostsModule(options ListOptions) dix.Module {
 	return dix.NewModule("cli-hosts",
 		dix.WithModuleProviders(
@@ -108,6 +134,36 @@ func NewAccessRequestReviewModule(options AccessRequestReviewOptions) dix.Module
 		dix.WithModuleProviders(
 			dix.Provider3(func(streams stdio, client *api.Client, sessions *SessionResolver) CommandRunner {
 				return &AccessRequestReviewRunner{out: streams.Out, client: client, sessions: sessions, options: options}
+			}),
+		),
+	)
+}
+
+func NewHostDetailModule(options DetailOptions) dix.Module {
+	return dix.NewModule("cli-host-detail",
+		dix.WithModuleProviders(
+			dix.Provider3(func(streams stdio, client *api.Client, sessions *SessionResolver) CommandRunner {
+				return &HostDetailRunner{out: streams.Out, client: client, sessions: sessions, options: options}
+			}),
+		),
+	)
+}
+
+func NewSessionDetailModule(options DetailOptions) dix.Module {
+	return dix.NewModule("cli-session-detail",
+		dix.WithModuleProviders(
+			dix.Provider3(func(streams stdio, client *api.Client, sessions *SessionResolver) CommandRunner {
+				return &SessionDetailRunner{out: streams.Out, client: client, sessions: sessions, options: options}
+			}),
+		),
+	)
+}
+
+func NewGatewayDetailModule(options DetailOptions) dix.Module {
+	return dix.NewModule("cli-gateway-detail",
+		dix.WithModuleProviders(
+			dix.Provider3(func(streams stdio, client *api.Client, sessions *SessionResolver) CommandRunner {
+				return &GatewayDetailRunner{out: streams.Out, client: client, sessions: sessions, options: options}
 			}),
 		),
 	)
@@ -258,6 +314,86 @@ func (r *AccessRequestReviewRunner) Run(ctx context.Context) error {
 		formatOptionalTime(item.ApprovedUntil),
 	}}
 	return WriteTable(r.out, []string{"ID", "STATUS", "HOST", "ACCOUNT", "PROTO", "REVIEWER", "REVIEWED_AT", "APPROVED_UNTIL"}, rows)
+}
+
+func (r *HostDetailRunner) Run(ctx context.Context) error {
+	if _, err := r.sessions.Resolve(ctx, ResolveOptions{}); err != nil {
+		return err
+	}
+	item, err := r.client.Host(ctx, r.options.ID)
+	if err != nil {
+		return err
+	}
+	if r.options.JSON {
+		return WriteJSON(r.out, item)
+	}
+	rows := [][]string{
+		{"ID", item.ID},
+		{"NAME", item.Name},
+		{"ADDRESS", item.Address},
+		{"PORT", fmt.Sprintf("%d", item.Port)},
+		{"PROTOCOL", item.Protocol},
+		{"ENVIRONMENT", item.Environment},
+		{"PLATFORM", item.Platform},
+		{"AUTHENTICATION", item.Authentication},
+		{"JUMP_ENABLED", fmt.Sprintf("%t", item.JumpEnabled)},
+		{"RECORDING_POLICY", item.RecordingPolicy},
+		{"CREATED_AT", item.CreatedAt.Local().Format("2006-01-02 15:04:05")},
+	}
+	return WriteKeyValueTable(r.out, rows)
+}
+
+func (r *SessionDetailRunner) Run(ctx context.Context) error {
+	if _, err := r.sessions.Resolve(ctx, ResolveOptions{}); err != nil {
+		return err
+	}
+	item, err := r.client.Session(ctx, r.options.ID)
+	if err != nil {
+		return err
+	}
+	if r.options.JSON {
+		return WriteJSON(r.out, item)
+	}
+	rows := [][]string{
+		{"ID", item.ID},
+		{"STATUS", item.Status},
+		{"HOST", item.HostName},
+		{"ACCOUNT", item.HostAccount},
+		{"PRINCIPAL", item.PrincipalName},
+		{"PROTOCOL", item.Protocol},
+		{"STARTED_AT", item.StartedAt.Local().Format("2006-01-02 15:04:05")},
+		{"ENDED_AT", formatOptionalTime(item.EndedAt)},
+	}
+	return WriteKeyValueTable(r.out, rows)
+}
+
+func (r *GatewayDetailRunner) Run(ctx context.Context) error {
+	if _, err := r.sessions.Resolve(ctx, ResolveOptions{}); err != nil {
+		return err
+	}
+	item, err := r.client.Gateway(ctx, r.options.ID)
+	if err != nil {
+		return err
+	}
+	if r.options.JSON {
+		return WriteJSON(r.out, item)
+	}
+	rows := [][]string{
+		{"ID", item.ID},
+		{"NODE_KEY", item.NodeKey},
+		{"NODE_NAME", item.NodeName},
+		{"RUNTIME_TYPE", item.RuntimeType},
+		{"ADVERTISE_ADDR", item.AdvertiseAddr},
+		{"SSH_LISTEN_ADDR", item.SSHListenAddr},
+		{"ZONE", item.Zone},
+		{"TAGS", strings.Join(item.Tags, ",")},
+		{"STATE", item.State},
+		{"EFFECTIVE_STATUS", item.EffectiveStatus},
+		{"REGISTERED_AT", item.RegisteredAt.Local().Format("2006-01-02 15:04:05")},
+		{"LAST_SEEN_AT", item.LastSeenAt.Local().Format("2006-01-02 15:04:05")},
+		{"UPDATED_AT", item.UpdatedAt.Local().Format("2006-01-02 15:04:05")},
+	}
+	return WriteKeyValueTable(r.out, rows)
 }
 
 func formatOptionalTime(value *time.Time) string {

@@ -21,6 +21,10 @@ type commandInput struct {
 	Overrides Overrides
 }
 
+type loadedConfig struct {
+	Config Config
+}
+
 type stdio struct {
 	In  io.Reader
 	Out io.Writer
@@ -40,11 +44,11 @@ func NewCommonModule(overrides Overrides) dix.Module {
 					Err: os.Stderr,
 				}
 			}),
-			dix.Provider1(func(log *slog.Logger) Config {
-				return LoadConfig(log)
+			dix.Provider1(func(log *slog.Logger) loadedConfig {
+				return loadedConfig{Config: LoadConfig(log)}
 			}),
-			dix.Provider2(func(cfg Config, input commandInput) Config {
-				return ApplyOverrides(cfg, input.Overrides)
+			dix.Provider2(func(cfg loadedConfig, input commandInput) Config {
+				return ApplyOverrides(cfg.Config, input.Overrides)
 			}),
 			dix.Provider2(func(cfg Config, log *slog.Logger) clienthttp.Client {
 				client, err := clienthttp.New(clienthttp.Config{

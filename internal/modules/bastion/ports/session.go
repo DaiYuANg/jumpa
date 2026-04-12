@@ -3,6 +3,8 @@ package ports
 import (
 	"context"
 	"time"
+
+	"github.com/samber/mo"
 )
 
 type SessionRecord struct {
@@ -32,6 +34,7 @@ type CreateSessionInput struct {
 
 type SessionRepository interface {
 	ListSessions(ctx context.Context) ([]SessionRecord, error)
+	GetSessionByID(ctx context.Context, id string) (mo.Option[SessionRecord], error)
 	CreateSession(ctx context.Context, in CreateSessionInput) (string, error)
 	UpdateSessionStatus(ctx context.Context, id, status string, endedAt *time.Time) error
 }

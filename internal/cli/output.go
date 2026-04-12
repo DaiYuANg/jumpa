@@ -27,3 +27,7 @@ func WriteTable(writer io.Writer, headers []string, rows [][]string) error {
 	})
 	return w.Flush()
 }
+
+func WriteKeyValueTable(writer io.Writer, rows [][]string) error {
+	return WriteTable(writer, []string{"FIELD", "VALUE"}, rows)
+}

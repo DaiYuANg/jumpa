@@ -130,6 +130,7 @@ func newHostsCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "print JSON")
+	cmd.AddCommand(newHostGetCmd(log, flags))
 	return cmd
 }
 
@@ -145,6 +146,7 @@ func newSessionsCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "print JSON")
+	cmd.AddCommand(newSessionGetCmd(log, flags))
 	return cmd
 }
 
@@ -209,6 +211,52 @@ func newGatewaysCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "print JSON")
+	cmd.AddCommand(newGatewayGetCmd(log, flags))
+	return cmd
+}
+
+func newHostGetCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
+	options := DetailOptions{}
+	cmd := &cobra.Command{
+		Use:   "get <host-id>",
+		Short: "show host details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			options.ID = args[0]
+			return runSubApp(cmd.Context(), log, "jumpa-cli-host-get", flags.overrides(cmd), NewHostDetailModule(options))
+		},
+	}
+	cmd.Flags().BoolVar(&options.JSON, "json", false, "print JSON")
+	return cmd
+}
+
+func newSessionGetCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
+	options := DetailOptions{}
+	cmd := &cobra.Command{
+		Use:   "get <session-id>",
+		Short: "show session details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			options.ID = args[0]
+			return runSubApp(cmd.Context(), log, "jumpa-cli-session-get", flags.overrides(cmd), NewSessionDetailModule(options))
+		},
+	}
+	cmd.Flags().BoolVar(&options.JSON, "json", false, "print JSON")
+	return cmd
+}
+
+func newGatewayGetCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
+	options := DetailOptions{}
+	cmd := &cobra.Command{
+		Use:   "get <gateway-id>",
+		Short: "show gateway details",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			options.ID = args[0]
+			return runSubApp(cmd.Context(), log, "jumpa-cli-gateway-get", flags.overrides(cmd), NewGatewayDetailModule(options))
+		},
+	}
+	cmd.Flags().BoolVar(&options.JSON, "json", false, "print JSON")
 	return cmd
 }
 
