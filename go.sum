@@ -95,6 +95,8 @@ github.com/DaiYuANg/arcgo/collectionx v0.0.4 h1:Il8o1dqh2lxRmKlCGpmRLk4z9PgpIxMy
 github.com/DaiYuANg/arcgo/collectionx v0.0.4/go.mod h1:hPLWO0oXuOJF9wGS37+2SvREbBvdCx7A+TEOMXyort0=
 github.com/DaiYuANg/arcgo/collectionx v0.1.4 h1:qZYIFCv8e3Wrb+ww8FD2Zn65rJ7TTIlDxSACcjDM4/s=
 github.com/DaiYuANg/arcgo/collectionx v0.1.4/go.mod h1:sCrFDvvLisDDsDn6OA2Pu5XzyljW4LHt8u0+iVJPCTU=
+github.com/DaiYuANg/arcgo/collectionx v0.1.5 h1:Nj3UveH4ioxJ2KQDZ6izTCiYc1z0eRQ6drcnBgF+uwk=
+github.com/DaiYuANg/arcgo/collectionx v0.1.5/go.mod h1:sCrFDvvLisDDsDn6OA2Pu5XzyljW4LHt8u0+iVJPCTU=
 github.com/DaiYuANg/arcgo/configx v0.0.2 h1:bRgJLFwGY+aye6PUfXjWLCVKNqsygDtVx5VFpSDvNp8=
 github.com/DaiYuANg/arcgo/configx v0.0.2/go.mod h1:tyklHAvk1AjBw1gnSEjmWD33mKtuk53YzzUR2jTppO0=
 github.com/DaiYuANg/arcgo/configx v0.0.3 h1:kMf/vclOn7KN/mtL1DvMt/YQr0JVQA1gbD5TT8FUW1g=
@@ -103,6 +105,8 @@ github.com/DaiYuANg/arcgo/configx v0.1.1 h1:cDjKSKSavsxSJzN11ITqv31G8FXuuzIJD/5n
 github.com/DaiYuANg/arcgo/configx v0.1.1/go.mod h1:yzXGNA18n832KrOhpLSYsGN2Vlc/DSjyMTjLv9J0Oso=
 github.com/DaiYuANg/arcgo/configx v0.3.0 h1:mhN2i5c/mI7i11FlcVD1Oxf2wK2AniIoAQLrL4s3r7c=
 github.com/DaiYuANg/arcgo/configx v0.3.0/go.mod h1:kxfNZfTgOfogkOWUQ+lzT1zywyNehZmAEDJxQcvYdBs=
+github.com/DaiYuANg/arcgo/configx v0.3.1 h1:I44/DNSzXEM5QrPe+YtYHgqFPt/beua2JRWc3fE9194=
+github.com/DaiYuANg/arcgo/configx v0.3.1/go.mod h1:kxfNZfTgOfogkOWUQ+lzT1zywyNehZmAEDJxQcvYdBs=
 github.com/DaiYuANg/arcgo/dbx v0.0.3 h1:/uOu2m3BS8n6wjWuY5YkDOcKXYbtOjjIPjSfMFb5i+w=
 github.com/DaiYuANg/arcgo/dbx v0.0.3/go.mod h1:0DkntnTfahRSaxQ0whSK4dc/4C+5rw4+neD11oUAeU8=
 github.com/DaiYuANg/arcgo/dbx v0.0.4 h1:PwJiHK97C/lNhCOcuZrsdmhjhoYwkXTAh0GmHIEB6JA=
@@ -123,6 +127,8 @@ github.com/DaiYuANg/arcgo/dix v0.1.1 h1:ou3LjV+skv9X9PpyzmFD555oQkaEQe5zSvhBJahd
 github.com/DaiYuANg/arcgo/dix v0.1.1/go.mod h1:XSNG7EOi5yBeVIoWPkawF7TAcCfEyPwe2/mAVnntDzs=
 github.com/DaiYuANg/arcgo/dix v0.5.0 h1:b7DyHMIiJVSQlc5qPlbJYQ7csYpteZRjjIuAP8EtF7Y=
 github.com/DaiYuANg/arcgo/dix v0.5.0/go.mod h1:Hc3+QT3NCEEaF+is6NgzkuIhhG5Smi7oFzKhx/Ef2j8=
+github.com/DaiYuANg/arcgo/dix v0.5.1 h1:TMJefuwEiuWD+Kqz2q+xZjjqqXwf6hMVFewtQ0pLcXE=
+github.com/DaiYuANg/arcgo/dix v0.5.1/go.mod h1:Hc3+QT3NCEEaF+is6NgzkuIhhG5Smi7oFzKhx/Ef2j8=
 github.com/DaiYuANg/arcgo/eventx v0.0.2 h1:0TbZ0olBe3b0utSMVXfBIqeK4t+ih/mRaoMEbYQSbkk=
 github.com/DaiYuANg/arcgo/eventx v0.0.2/go.mod h1:j4x6IwjjwDQ3eeN9YoiNZfDe+QHu9GBfKuRmIPGQ4+w=
 github.com/DaiYuANg/arcgo/eventx v0.0.3 h1:ZR6+G15lH6IPzC2b7H8Jf+HXXGWGgDbAAWv7hky1e24=
@@ -183,6 +189,8 @@ github.com/DaiYuANg/arcgo/logx v0.0.4 h1:MNWLuJxl2xuhTDPxM+89lNq39yvVXsE7CSsKouO
 github.com/DaiYuANg/arcgo/logx v0.0.4/go.mod h1:pg9sOfYf0K4Y8QWXLPnOJs9a4W2pK8lQ3g1ciBwi2t8=
 github.com/DaiYuANg/arcgo/logx v0.1.2 h1:2MANtZNOXjzbRCcMqqFHQwena809Tjczkz4HSCXlELQ=
 github.com/DaiYuANg/arcgo/logx v0.1.2/go.mod h1:N2mP9WmqYYj7Frq7e7FCSUOjYxr1+Lb+EKEPPsmj9rA=
+github.com/DaiYuANg/arcgo/logx v0.1.3 h1:P800a0jGZGPKAkJuPHIOHeo6lxjHdFfx2hcruvcw3ro=
+github.com/DaiYuANg/arcgo/logx v0.1.3/go.mod h1:N2mP9WmqYYj7Frq7e7FCSUOjYxr1+Lb+EKEPPsmj9rA=
 github.com/DaiYuANg/arcgo/observabilityx v0.0.2 h1:jacEFliuY67mbpUIANsJIMm4SMyyyGG1t8KPyy2pYhE=
 github.com/DaiYuANg/arcgo/observabilityx v0.0.2/go.mod h1:O4gQZZALxjmca/DZJhAnnrKgNgKSSaTIzg0iQ4fY00s=
 github.com/DaiYuANg/arcgo/observabilityx v0.0.3 h1:L1r1Mt6Iv6L2GvKXo0TUFfbiTiUbcyK5y/JuAbSc0T0=
@@ -191,6 +199,8 @@ github.com/DaiYuANg/arcgo/observabilityx v0.0.4 h1:99UCqq+BdqJaTSSyi3mp3hmMRZ3Fl
 github.com/DaiYuANg/arcgo/observabilityx v0.0.4/go.mod h1:tCmK0RueriVqkELBfTdF/Co6MNyEn35iz4udwSewym4=
 github.com/DaiYuANg/arcgo/observabilityx v0.2.0 h1:9taXxRvrmc0ew5QBvNxaTW3Ce99AWZvrqxJdh6Kxtjo=
 github.com/DaiYuANg/arcgo/observabilityx v0.2.0/go.mod h1:MNxrjGhlm7d5/zVfJhX0smdpyxRe5ppo+5EtFSWxcG4=
+github.com/DaiYuANg/arcgo/observabilityx v0.2.1 h1:I+1pkUIxlUA4GScG+2a4aGK3E22ZHD5hG9/7vNVVqRc=
+github.com/DaiYuANg/arcgo/observabilityx v0.2.1/go.mod h1:ha6U/dqkjtHmhUvvxhJCApwrFTur21zZEVdHX5HucOI=
 github.com/DaiYuANg/arcgo/pkg/option v0.0.2 h1:9UICJPYwVAG9WG6QT+yEMAdWvsNu2ruXSiNaHzngKuo=
 github.com/DaiYuANg/arcgo/pkg/option v0.0.2/go.mod h1:hPYlmDj8oIoBaRRjVhBxTlQbkLP4IXVnVqDm5MXYcrk=
 github.com/DaiYuANg/arcgo/pkg/randomport v0.0.2 h1:5RqKzYnwFk6b0PyY0dw0rYMYl3kDkgM2c0ABEhdWypw=
@@ -399,6 +409,8 @@ github.com/charmbracelet/ultraviolet v0.0.0-20260205113103-524a6607adb8 h1:eyFRb
 github.com/charmbracelet/ultraviolet v0.0.0-20260205113103-524a6607adb8/go.mod h1:SQpCTRNBtzJkwku5ye4S3HEuthAlGy2n9VXZnWkEW98=
 github.com/charmbracelet/ultraviolet v0.0.0-20260316091819-b93f6a3b8502 h1:hzWNs3UQRSUTS6YCbLaQnwqKBFXT5Yh1OOw6+26apqg=
 github.com/charmbracelet/ultraviolet v0.0.0-20260316091819-b93f6a3b8502/go.mod h1:mkUCcxn9w9j89JJp3pOza5tmDQZPgIB75UfmQlFYvas=
+github.com/charmbracelet/ultraviolet v0.0.0-20260330092749-0f94982c930b h1:ASDO9RT6SNKTQN87jO2bRfxHFJq8cgeYdFzivY2gCeM=
+github.com/charmbracelet/ultraviolet v0.0.0-20260330092749-0f94982c930b/go.mod h1:Vo8TffMf0q7Uho/n8e6XpBZvOWtd3g39yX+9P5rRutA=
 github.com/charmbracelet/x/ansi v0.11.6 h1:GhV21SiDz/45W9AnV2R61xZMRri5NlLnl6CVF7ihZW8=
 github.com/charmbracelet/x/ansi v0.11.6/go.mod h1:2JNYLgQUsyqaiLovhU2Rv/pb8r6ydXKS3NIttu3VGZQ=
 github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd h1:vy0GVL4jeHEwG5YOXDmi86oYw2yuYUGqz6a8sLwg0X8=
@@ -761,6 +773,8 @@ github.com/leonklingele/grouper v1.1.2 h1:o1ARBDLOmmasUaNDesWqWCIFH3u7hoFlM84Yrj
 github.com/leonklingele/grouper v1.1.2/go.mod h1:6D0M/HVkhs2yRKRFZUoGjeDy7EZTfFBE9gl4kjmIGkA=
 github.com/lucasb-eyer/go-colorful v1.3.0 h1:2/yBRLdWBZKrf7gB40FoiKfAWYQ0lqNcbuQwVHXptag=
 github.com/lucasb-eyer/go-colorful v1.3.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
+github.com/lucasb-eyer/go-colorful v1.4.0 h1:UtrWVfLdarDgc44HcS7pYloGHJUjHV/4FwW4TvVgFr4=
+github.com/lucasb-eyer/go-colorful v1.4.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/macabu/inamedparam v0.2.0 h1:VyPYpOc10nkhI2qeNUdh3Zket4fcZjEWe35poddBCpE=
 github.com/macabu/inamedparam v0.2.0/go.mod h1:+Pee9/YfGe5LJ62pYXqB89lJ+0k5bsR8Wgz/C0Zlq3U=
 github.com/magiconair/properties v1.8.6 h1:5ibWZ6iY0NctNGWo87LalDlEZ6R41TqbbDamhfG/Qzo=
@@ -930,6 +944,8 @@ github.com/samber/oops/loggers/zerolog v0.0.0-20260325233024-fdc4d78178db h1:Hna
 github.com/samber/oops/loggers/zerolog v0.0.0-20260325233024-fdc4d78178db/go.mod h1:/C9n7N0ot6DXHLtSWKMZ48CMopEVxxwLDpRnxjpCAy8=
 github.com/samber/oops/loggers/zerolog v0.0.0-20260409201923-0372e7b9d26f h1:U1QDQ/vfpdKtsAtO2CbLzZISTczcuyjQGR5s4Wzt2t0=
 github.com/samber/oops/loggers/zerolog v0.0.0-20260409201923-0372e7b9d26f/go.mod h1:yPWfdfbGcGLhHYCa4tDGAqjWUwCFTUemNwzXi4bdFBY=
+github.com/samber/oops/loggers/zerolog v0.0.0-20260412154111-1460827f264f h1:fzhOF1JvKin3wbnNsWDBV1fhWgteddUOQm4lMjk5FTc=
+github.com/samber/oops/loggers/zerolog v0.0.0-20260412154111-1460827f264f/go.mod h1:pgsuyKt7qh3AYC0exA2P3kPaEt36YmDKltHyIMq9ZeE=
 github.com/samber/slog-common v0.21.0 h1:Wo2hTly1Br5RjYqX/BTWJJeDnTE85oWk/7vqlpZuAUc=
 github.com/samber/slog-common v0.21.0/go.mod h1:d/6OaSlzdkl9PFpfRLgn8FwY1OW6EFmPtBpsHX4MrU0=
 github.com/samber/slog-common v0.22.0 h1:WyPxYRg/c5xUmxZJbtd0QgysHlLBhRA+MngKdJieHxE=

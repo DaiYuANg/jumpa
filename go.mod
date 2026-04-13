@@ -16,17 +16,17 @@ require (
 	charm.land/lipgloss/v2 v2.0.2
 	github.com/DaiYuANg/arcgo/authx v0.2.3
 	github.com/DaiYuANg/arcgo/clientx v0.3.1
-	github.com/DaiYuANg/arcgo/collectionx v0.1.4
-	github.com/DaiYuANg/arcgo/configx v0.3.0
+	github.com/DaiYuANg/arcgo/collectionx v0.1.5
+	github.com/DaiYuANg/arcgo/configx v0.3.1
 	github.com/DaiYuANg/arcgo/dbx v0.2.3
 	github.com/DaiYuANg/arcgo/dbx/migrate v0.0.4
-	github.com/DaiYuANg/arcgo/dix v0.5.0
+	github.com/DaiYuANg/arcgo/dix v0.5.1
 	github.com/DaiYuANg/arcgo/eventx v0.3.0
 	github.com/DaiYuANg/arcgo/httpx v0.2.3
 	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.1.3
 	github.com/DaiYuANg/arcgo/kvx v0.2.3
 	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.2.3
-	github.com/DaiYuANg/arcgo/logx v0.1.2
+	github.com/DaiYuANg/arcgo/logx v0.1.3
 	github.com/DaiYuANg/arcgo/pkg/randomport v0.0.4
 	github.com/danielgtaylor/huma/v2 v2.37.3
 	github.com/go-co-op/gocron/v2 v2.20.0
@@ -73,7 +73,7 @@ require (
 	github.com/DaiYuANg/arcgo/httpx/adapter/echo v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/gin v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.1.3 // indirect
-	github.com/DaiYuANg/arcgo/observabilityx v0.2.0 // indirect
+	github.com/DaiYuANg/arcgo/observabilityx v0.2.1 // indirect
 	github.com/DaiYuANg/arcgo/pkg/option v0.0.2 // indirect
 	github.com/Djarvur/go-err113 v0.1.1 // indirect
 	github.com/DmitriyVTitov/size v1.5.0 // indirect
@@ -139,7 +139,7 @@ require (
 	github.com/charithe/durationcheck v0.0.11 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260316091819-b93f6a3b8502 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260330092749-0f94982c930b // indirect
 	github.com/charmbracelet/x/ansi v0.11.6 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
@@ -267,7 +267,7 @@ require (
 	github.com/ldez/usetesting v0.5.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/leonklingele/grouper v1.1.2 // indirect
-	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
+	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/macabu/inamedparam v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/manuelarte/embeddedstructfieldcheck v0.4.0 // indirect
@@ -329,7 +329,7 @@ require (
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 	github.com/samber/hot v0.13.0 // indirect
 	github.com/samber/oops v1.21.0 // indirect
-	github.com/samber/oops/loggers/zerolog v0.0.0-20260409201923-0372e7b9d26f // indirect
+	github.com/samber/oops/loggers/zerolog v0.0.0-20260412154111-1460827f264f // indirect
 	github.com/samber/slog-common v0.22.0 // indirect
 	github.com/samber/slog-zerolog/v2 v2.9.2 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
