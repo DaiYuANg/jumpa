@@ -6,14 +6,13 @@ import (
 	"os"
 
 	"github.com/DaiYuANg/arcgo/logx"
-	"github.com/DaiYuANg/jumpa/internal/cli"
 )
 
 func Run() {
 	logger := logx.MustNew(logx.WithConsole(true), logx.WithTraceLevel())
 	defer func() { _ = logx.Close(logger) }()
 
-	root := cli.NewRootCommand(logger)
+	root := newRootCommand(logger)
 	root.SetContext(context.Background())
 
 	if err := root.Execute(); err != nil {

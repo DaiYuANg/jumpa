@@ -110,10 +110,21 @@ CLI runtime notes:
 - `cmd/cli` now uses `cobra` as the command surface, and each leaf command builds its own independent `dix` app
 - `cmd/cli` still follows the same ArcGo-style DI/runtime approach as `cmd/server` and `cmd/gateway`
 - CLI config loads from `.env` plus `APP_CLI_*` environment variables
-- Shared overrides are exposed as persistent flags: `--api`, `--gateway`, `--email`, `--password`, `--principal`, `--ssh`, `--alt-screen`
+- Shared overrides are exposed as persistent flags: `--api`, `--gateway`, `--email`, `--password`, `--principal`, `--ssh-config`, `--ssh-key`, `--ssh-key-passphrase`, `--ssh-agent`, `--ssh-agent-sock`, `--alt-screen`
+- Root help groups commands into workflow, resource, and review sections
 - Current leaf commands: `ui`, `hosts`, `sessions`, `requests`, `gateways`, `connect`
-- The CLI reuses the existing control-plane HTTP APIs and launches the local `ssh` binary for actual terminal sessions
+- The CLI reuses the existing control-plane HTTP APIs and delegates terminal sessions to the shared `internal/sshclient` Go SSH client
 - The CLI now uses `arcgo/clientx/http` for control-plane requests, while keeping command wiring and DTOs inside `internal/cli`
+- `requests --status` supports shell completion for `pending`, `approved`, and `rejected`
+- The built-in SSH client reads `~/.ssh/config` by default, or `APP_CLI_SSH_CONFIG_PATH` / `--ssh-config` when provided
+- The built-in SSH client supports password auth, private-key auth via `APP_CLI_SSH_PRIVATE_KEY_PATH` / `--ssh-key`, and optional agent auth via `APP_CLI_SSH_AGENT_ENABLED=true` or `--ssh-agent`
+- When SSH agent auth is enabled, the CLI uses `APP_CLI_SSH_AGENT_SOCKET`, `--ssh-agent-sock`, or `SSH_AUTH_SOCK`
+- Supported `ssh_config` options for gateway connections are `User`, `HostName`, `Port`, `IdentityFile`, `IdentityAgent`, `UserKnownHostsFile`, `StrictHostKeyChecking`, and `ProxyJump`
+- `ProxyJump` is supported for single-hop and multi-hop SSH chains; `ProxyCommand` and `ProxyJump`-adjacent shell execution are still unsupported
+- `connect -L/--local-forward` supports standard `[bind_address:]port:host:hostport` local forwards
+- `connect -R/--remote-forward` supports standard `[bind_address:]port:host:hostport` remote forwards
+- `connect -D/--dynamic-forward` starts a local SOCKS5 proxy with `[bind_address:]port`
+- Host keys are still validated via the user's `~/.ssh/known_hosts` file by default
 
 CLI command examples:
 
@@ -129,6 +140,26 @@ go run ./cmd/cli gateways
 go run ./cmd/cli gateways get 123
 go run ./cmd/cli sessions get 123
 go run ./cmd/cli connect prod-web-01 ubuntu
+go run ./cmd/cli connect prod-db-01 --ssh-key ~/.ssh/id_ed25519
+go run ./cmd/cli connect prod-db-01 -L 15432:127.0.0.1:5432
+go run ./cmd/cli connect prod-web-01 -R 18080:127.0.0.1:8080
+go run ./cmd/cli connect prod-web-01 -D 1080
+```
+
+CLI shell completion examples:
+
+```bash
+go run ./cmd/cli completion bash
+go run ./cmd/cli completion zsh
+go run ./cmd/cli completion fish
+go run ./cmd/cli completion powershell
+```
+
+After building `dist/cli`, you can also install shell completion with the generated binary:
+
+```bash
+./dist/cli completion bash > /etc/bash_completion.d/jumpa
+./dist/cli completion zsh > "${fpath[1]}/_jumpa"
 ```
 
 Useful early bastion endpoints:

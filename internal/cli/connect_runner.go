@@ -4,11 +4,15 @@ import (
 	"context"
 
 	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/DaiYuANg/jumpa/internal/sshclient"
 )
 
 type ConnectOptions struct {
-	Host    string
-	Account string
+	Host            string
+	Account         string
+	LocalForwards   []sshclient.LocalForward
+	RemoteForwards  []sshclient.RemoteForward
+	DynamicForwards []sshclient.DynamicForward
 }
 
 type ConnectRunner struct {
@@ -42,6 +46,15 @@ func (r *ConnectRunner) Run(ctx context.Context) error {
 
 	principal, _ := session.Principal.Get()
 	gatewayAddr, _ := session.GatewayAddr.Get()
-	request := BuildLaunchRequest(principal, gatewayAddr, r.options.Host, r.options.Account)
-	return r.ssh.Launch(request)
+	loginPassword, _ := session.LoginPassword.Get()
+	request, err := BuildLaunchRequest(principal, gatewayAddr, r.options.Host, r.options.Account)
+	if err != nil {
+		return err
+	}
+	return r.ssh.Launch(request, SSHLaunchOptions{
+		Password:        loginPassword,
+		LocalForwards:   r.options.LocalForwards,
+		RemoteForwards:  r.options.RemoteForwards,
+		DynamicForwards: r.options.DynamicForwards,
+	})
 }

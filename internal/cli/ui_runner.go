@@ -43,6 +43,7 @@ func (r *UIRunner) Run(ctx context.Context) error {
 
 	gatewayAddr, _ := session.GatewayAddr.Get()
 	principal, _ := session.Principal.Get()
+	loginPassword, _ := session.LoginPassword.Get()
 	model := cliapp.New(r.client, cliapp.Options{
 		Principal:   principal,
 		GatewayAddr: gatewayAddr,
@@ -60,5 +61,7 @@ func (r *UIRunner) Run(ctx context.Context) error {
 		return nil
 	}
 
-	return r.ssh.Launch(*typed.LaunchRequest())
+	return r.ssh.Launch(*typed.LaunchRequest(), SSHLaunchOptions{
+		Password: loginPassword,
+	})
 }

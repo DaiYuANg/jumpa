@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/url"
 	"strings"
 
 	collectionlist "github.com/DaiYuANg/arcgo/collectionx/list"
 	cliapi "github.com/DaiYuANg/jumpa/internal/cli/api"
+	cliapp "github.com/DaiYuANg/jumpa/internal/cli/app"
 	"github.com/samber/lo"
 	"github.com/samber/mo"
 	"golang.org/x/term"
@@ -31,10 +33,11 @@ type ResolveOptions struct {
 }
 
 type SessionContext struct {
-	Login       cliapi.LoginResponse
-	Overview    mo.Option[cliapi.Overview]
-	Principal   mo.Option[string]
-	GatewayAddr mo.Option[string]
+	Login         cliapi.LoginResponse
+	LoginPassword mo.Option[string]
+	Overview      mo.Option[cliapi.Overview]
+	Principal     mo.Option[string]
+	GatewayAddr   mo.Option[string]
 }
 
 type promptField struct {
@@ -67,8 +70,9 @@ func (r *SessionResolver) Resolve(ctx context.Context, opts ResolveOptions) (Ses
 	}
 
 	result := SessionContext{
-		Login:     login,
-		Principal: optionString(creds.Principal),
+		Login:         login,
+		LoginPassword: optionString(creds.Password),
+		Principal:     optionString(creds.Principal),
 	}
 
 	if !opts.NeedOverview {
@@ -193,19 +197,27 @@ func localPart(email string) string {
 
 func resolveGatewayAddr(override, apiBase, sshListen string) string {
 	if strings.TrimSpace(override) != "" {
+		normalized, err := cliapp.NormalizeGatewayAddress(override)
+		if err == nil {
+			return normalized
+		}
 		return strings.TrimSpace(override)
 	}
 	if strings.TrimSpace(sshListen) == "" {
-		return "127.0.0.1:2222"
+		return net.JoinHostPort(cliapp.DefaultGatewayHost, cliapp.DefaultGatewayPort)
 	}
 	if strings.HasPrefix(sshListen, ":") {
 		u, err := url.Parse(apiBase)
 		if err != nil || u.Hostname() == "" {
-			return "127.0.0.1" + sshListen
+			return net.JoinHostPort(cliapp.DefaultGatewayHost, strings.TrimPrefix(sshListen, ":"))
 		}
-		return u.Hostname() + sshListen
+		return net.JoinHostPort(u.Hostname(), strings.TrimPrefix(sshListen, ":"))
 	}
-	return sshListen
+	normalized, err := cliapp.NormalizeGatewayAddress(sshListen)
+	if err != nil {
+		return sshListen
+	}
+	return normalized
 }
 
 func optionString(value string) mo.Option[string] {

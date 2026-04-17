@@ -220,7 +220,7 @@ func (m Model) currentLaunch() *LaunchRequest {
 		return nil
 	}
 	target := fmt.Sprintf("%s#%s", m.principal, host.Name)
-	gatewayHost, gatewayPort := splitGatewayAddress(m.gatewayAddr)
+	gatewayHost, gatewayPort := SplitGatewayAddress(m.gatewayAddr)
 	return &LaunchRequest{
 		Target:      target,
 		GatewayHost: gatewayHost,
@@ -337,24 +337,4 @@ func renderOverview(m Model) string {
 		fmt.Sprintf("Capability Notes: %s", strings.Join(m.data.Overview.CapabilityNotes, " | ")),
 	}
 	return strings.Join(lines, "\n")
-}
-
-func splitGatewayAddress(raw string) (string, string) {
-	value := strings.TrimSpace(raw)
-	if value == "" {
-		return "127.0.0.1", "2222"
-	}
-	parts := strings.Split(value, ":")
-	if len(parts) == 1 {
-		return parts[0], "22"
-	}
-	host := strings.Join(parts[:len(parts)-1], ":")
-	port := parts[len(parts)-1]
-	if host == "" {
-		host = "127.0.0.1"
-	}
-	if port == "" {
-		port = "22"
-	}
-	return host, port
 }

@@ -1,5 +1,9 @@
 package main
 
+import "os"
+
 func main() {
-	Run()
+	if err := runGateway(); err != nil {
+		os.Exit(1)
+	}
 }

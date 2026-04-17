@@ -2,79 +2,109 @@ package cli
 
 import (
 	"fmt"
-	"io"
 	"log/slog"
-	"os/exec"
+	"os"
 	"strings"
+	"time"
 
 	cliapp "github.com/DaiYuANg/jumpa/internal/cli/app"
+	"github.com/DaiYuANg/jumpa/internal/sshclient"
 )
 
 type SSHLauncher struct {
 	cfg    Config
-	log    *slog.Logger
-	stdin  io.Reader
-	stdout io.Writer
-	stderr io.Writer
+	client *sshclient.Client
+}
+
+type SSHLaunchOptions struct {
+	Password        string
+	LocalForwards   []sshclient.LocalForward
+	RemoteForwards  []sshclient.RemoteForward
+	DynamicForwards []sshclient.DynamicForward
 }
 
 func NewSSHLauncher(cfg Config, log *slog.Logger, streams stdio) *SSHLauncher {
 	return &SSHLauncher{
-		cfg:    cfg,
-		log:    log,
-		stdin:  streams.In,
-		stdout: streams.Out,
-		stderr: streams.Err,
+		cfg: cfg,
+		client: sshclient.New(sshclient.Config{
+			HostKeyPolicy:  cfg.SSHHostKeyPolicy,
+			KnownHostsPath: cfg.SSHKnownHostsPath,
+			ConfigPath:     cfg.SSHConfigPath,
+			ConnectTimeout: 15 * time.Second,
+		}, log, sshclient.Streams{
+			In:  streams.In,
+			Out: streams.Out,
+			Err: streams.Err,
+		}),
 	}
 }
 
-func (l *SSHLauncher) Launch(req cliapp.LaunchRequest) error {
-	target := fmt.Sprintf("%s@%s", req.Target, req.GatewayHost)
-	binary := StringOverride(l.cfg.SSHBinary).OrElse("ssh")
-	cmd := exec.Command(binary, "-p", req.GatewayPort, target)
-	cmd.Stdin = l.stdin
-	cmd.Stdout = l.stdout
-	cmd.Stderr = l.stderr
+func (l *SSHLauncher) Launch(req cliapp.LaunchRequest, options SSHLaunchOptions) error {
+	request := sshclient.Request{
+		User:            req.Target,
+		Host:            req.GatewayHost,
+		Port:            req.GatewayPort,
+		Password:        options.Password,
+		LocalForwards:   options.LocalForwards,
+		RemoteForwards:  options.RemoteForwards,
+		DynamicForwards: options.DynamicForwards,
+	}
 
-	l.log.Info("launching ssh session",
-		slog.String("binary", binary),
-		slog.String("target", target),
-		slog.String("port", req.GatewayPort),
-	)
+	if key := resolveSSHPrivateKey(l.cfg); key != nil {
+		request.PrivateKey = key
+	}
 
-	return cmd.Run()
+	agentSocket, err := resolveSSHAgentSocket(l.cfg)
+	if err != nil {
+		return err
+	}
+	request.AgentSocket = agentSocket
+
+	return l.client.Launch(request)
 }
 
-func BuildLaunchRequest(principal, gatewayAddr, hostName, account string) cliapp.LaunchRequest {
+func BuildLaunchRequest(principal, gatewayAddr, hostName, account string) (cliapp.LaunchRequest, error) {
 	targetParts := []string{strings.TrimSpace(principal), strings.TrimSpace(hostName)}
 	if accountValue := strings.TrimSpace(account); accountValue != "" {
 		targetParts = append(targetParts, accountValue)
 	}
 
-	gatewayHost, gatewayPort := splitGatewayAddress(gatewayAddr)
+	gatewayHost, gatewayPort, err := cliapp.ParseGatewayAddress(gatewayAddr)
+	if err != nil {
+		return cliapp.LaunchRequest{}, err
+	}
+
 	return cliapp.LaunchRequest{
 		Target:      strings.Join(targetParts, "#"),
 		GatewayHost: gatewayHost,
 		GatewayPort: gatewayPort,
+	}, nil
+}
+
+func resolveSSHPrivateKey(cfg Config) *sshclient.PrivateKey {
+	path := strings.TrimSpace(cfg.SSHPrivateKeyPath)
+	if path == "" {
+		return nil
+	}
+
+	return &sshclient.PrivateKey{
+		Path:       path,
+		Passphrase: strings.TrimSpace(cfg.SSHPrivateKeyPassphrase),
 	}
 }
 
-func splitGatewayAddress(raw string) (string, string) {
-	value := strings.TrimSpace(raw)
-	if value == "" {
-		return "127.0.0.1", "2222"
+func resolveSSHAgentSocket(cfg Config) (string, error) {
+	if !cfg.SSHAgentEnabled {
+		return "", nil
 	}
-	parts := strings.Split(value, ":")
-	if len(parts) == 1 {
-		return parts[0], "22"
+
+	if socket := strings.TrimSpace(cfg.SSHAgentSocket); socket != "" {
+		return socket, nil
 	}
-	host := strings.Join(parts[:len(parts)-1], ":")
-	port := parts[len(parts)-1]
-	if host == "" {
-		host = "127.0.0.1"
+
+	if socket := strings.TrimSpace(os.Getenv("SSH_AUTH_SOCK")); socket != "" {
+		return socket, nil
 	}
-	if port == "" {
-		port = "22"
-	}
-	return host, port
+
+	return "", fmt.Errorf("ssh agent is enabled but no socket was configured and SSH_AUTH_SOCK is empty")
 }
