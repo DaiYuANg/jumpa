@@ -47,7 +47,7 @@ func runMigrate() error {
 
 	logger.Info("migrations completed",
 		slog.String("runtime", migrateRuntimeName),
-		slog.Int("applied", len(report.Applied)),
+		slog.Int("applied", report.Applied.Len()),
 		slog.String("dir", dir),
 		slog.Bool("embedded", embedded),
 	)

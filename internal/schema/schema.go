@@ -3,7 +3,9 @@ package schema
 import (
 	"time"
 
-	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/idgen"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 )
 
 type UserRow struct {
@@ -16,11 +18,11 @@ type UserRow struct {
 }
 
 type UserSchema struct {
-	dbx.Schema[UserRow]
-	ID        dbx.IDColumn[UserRow, int64, dbx.IDSnowflake] `dbx:"id"`
-	Name      dbx.Column[UserRow, string]    `dbx:"name"`
-	Email     dbx.Column[UserRow, string]    `dbx:"email,unique"`
-	Age       dbx.Column[UserRow, int]       `dbx:"age"`
-	CreatedAt dbx.Column[UserRow, time.Time] `dbx:"created_at,codec=rfc3339_time"`
-	UpdatedAt dbx.Column[UserRow, time.Time] `dbx:"updated_at,codec=rfc3339_time"`
+	schemax.Schema[UserRow]
+	ID        columnx.IDColumn[UserRow, int64, idgen.IDSnowflake] `dbx:"id"`
+	Name      columnx.Column[UserRow, string]                     `dbx:"name"`
+	Email     columnx.Column[UserRow, string]                     `dbx:"email,unique"`
+	Age       columnx.Column[UserRow, int]                        `dbx:"age"`
+	CreatedAt columnx.Column[UserRow, time.Time]                  `dbx:"created_at,codec=rfc3339_time"`
+	UpdatedAt columnx.Column[UserRow, time.Time]                  `dbx:"updated_at,codec=rfc3339_time"`
 }

@@ -4,7 +4,10 @@ import (
 	"context"
 
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 
@@ -14,9 +17,9 @@ type authPrincipalRow struct {
 }
 
 type authPrincipalSchema struct {
-	dbx.Schema[authPrincipalRow]
-	ID    dbx.Column[authPrincipalRow, string] `dbx:"id,pk"`
-	Email dbx.Column[authPrincipalRow, string] `dbx:"email"`
+	schemax.Schema[authPrincipalRow]
+	ID    columnx.Column[authPrincipalRow, string] `dbx:"id,pk"`
+	Email columnx.Column[authPrincipalRow, string] `dbx:"email"`
 }
 
 type authPrincipalRoleRow struct {
@@ -25,9 +28,9 @@ type authPrincipalRoleRow struct {
 }
 
 type authPrincipalRoleSchema struct {
-	dbx.Schema[authPrincipalRoleRow]
-	PrincipalID dbx.Column[authPrincipalRoleRow, string] `dbx:"principal_id"`
-	Role        dbx.Column[authPrincipalRoleRow, string] `dbx:"role"`
+	schemax.Schema[authPrincipalRoleRow]
+	PrincipalID columnx.Column[authPrincipalRoleRow, string] `dbx:"principal_id"`
+	Role        columnx.Column[authPrincipalRoleRow, string] `dbx:"role"`
 }
 
 type authPrincipalRepo struct {
@@ -38,8 +41,8 @@ type authPrincipalRepo struct {
 }
 
 func NewAuthPrincipalRepository(db *dbx.DB) ports.AuthPrincipalRepository {
-	aps := dbx.MustSchema("app_auth_principals", authPrincipalSchema{})
-	apr := dbx.MustSchema("app_auth_principal_roles", authPrincipalRoleSchema{})
+	aps := schemax.MustSchema("app_auth_principals", authPrincipalSchema{})
+	apr := schemax.MustSchema("app_auth_principal_roles", authPrincipalRoleSchema{})
 	return &authPrincipalRepo{
 		aps:               aps,
 		apr:               apr,
@@ -56,14 +59,14 @@ func (r *authPrincipalRepo) UpsertAuthPrincipal(ctx context.Context, userID int6
 
 func (r *authPrincipalRepo) DeleteAuthPrincipal(ctx context.Context, userID int64) error {
 	id := principalIDByUser(userID)
-	_, _ = r.principalRoleRepo.Delete(ctx, dbx.DeleteFrom(r.apr).Where(r.apr.PrincipalID.Eq(id)))
+	_, _ = r.principalRoleRepo.Delete(ctx, querydsl.DeleteFrom(r.apr).Where(r.apr.PrincipalID.Eq(id)))
 	_, err := r.principalRepo.DeleteByID(ctx, id)
 	return err
 }
 
 func (r *authPrincipalRepo) SetAuthPrincipalRoles(ctx context.Context, userID int64, roleIDs []string) error {
 	id := principalIDByUser(userID)
-	if _, err := r.principalRoleRepo.Delete(ctx, dbx.DeleteFrom(r.apr).Where(r.apr.PrincipalID.Eq(id))); err != nil {
+	if _, err := r.principalRoleRepo.Delete(ctx, querydsl.DeleteFrom(r.apr).Where(r.apr.PrincipalID.Eq(id))); err != nil {
 		return err
 	}
 	for _, roleID := range roleIDs {

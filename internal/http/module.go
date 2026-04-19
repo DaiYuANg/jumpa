@@ -16,6 +16,7 @@ import (
 	"github.com/DaiYuANg/jumpa/internal/api"
 	auth2 "github.com/DaiYuANg/jumpa/internal/auth"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
+	"github.com/DaiYuANg/jumpa/internal/httpendpoint"
 	"github.com/DaiYuANg/jumpa/pkg"
 	"github.com/go-playground/validator/v10"
 	fiberapp "github.com/gofiber/fiber/v2"
@@ -144,13 +145,16 @@ func buildHTTPServer(app *fiberapp.App, endpoints []httpx.Endpoint, log *slog.Lo
 		httpx.WithValidator(validator.New(validator.WithRequiredStructEnabled())),
 		httpx.WithValidation(),
 	)
-	server.RegisterOnly(endpoints...)
+	for _, endpoint := range endpoints {
+		server.RegisterOnly(endpoint)
+	}
 	return server
 }
 
 var Module = dix.NewModule("http",
 	dix.WithModuleImports(config2.Module, api.Module, auth2.Module),
 	dix.WithModuleProviders(
+		httpendpoint.SliceProvider(),
 		dix.Provider1(func(cfg config2.AppConfig) AuthzPolicyConfig { return authzPolicyFromConfig(cfg) }),
 		dix.Provider4(func(endpoints []httpx.Endpoint, log *slog.Logger, engine *authx.Engine, policy AuthzPolicyConfig) httpx.ServerRuntime {
 			app := newFiberApp()

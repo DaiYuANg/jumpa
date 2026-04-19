@@ -12,42 +12,42 @@ tool (
 )
 
 require (
-	charm.land/bubbletea/v2 v2.0.2
-	charm.land/lipgloss/v2 v2.0.2
-	github.com/DaiYuANg/arcgo/authx v0.2.3
-	github.com/DaiYuANg/arcgo/clientx v0.3.1
-	github.com/DaiYuANg/arcgo/collectionx v0.1.5
-	github.com/DaiYuANg/arcgo/configx v0.3.1
-	github.com/DaiYuANg/arcgo/dbx v0.2.3
-	github.com/DaiYuANg/arcgo/dbx/migrate v0.0.4
-	github.com/DaiYuANg/arcgo/dix v0.5.1
-	github.com/DaiYuANg/arcgo/eventx v0.3.0
-	github.com/DaiYuANg/arcgo/httpx v0.2.3
-	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.1.3
-	github.com/DaiYuANg/arcgo/kvx v0.2.3
-	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.2.3
-	github.com/DaiYuANg/arcgo/logx v0.1.3
+	charm.land/bubbletea/v2 v2.0.6
+	charm.land/lipgloss/v2 v2.0.3
+	github.com/DaiYuANg/arcgo/authx v0.2.6
+	github.com/DaiYuANg/arcgo/clientx v0.3.2
+	github.com/DaiYuANg/arcgo/collectionx v0.1.6
+	github.com/DaiYuANg/arcgo/configx v0.3.2
+	github.com/DaiYuANg/arcgo/dbx v0.3.1
+	github.com/DaiYuANg/arcgo/dbx/migrate v0.1.4
+	github.com/DaiYuANg/arcgo/dix v0.6.0
+	github.com/DaiYuANg/arcgo/eventx v0.3.2
+	github.com/DaiYuANg/arcgo/httpx v0.2.6
+	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.1.5
+	github.com/DaiYuANg/arcgo/kvx v0.2.5
+	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.2.5
+	github.com/DaiYuANg/arcgo/logx v0.1.4
 	github.com/DaiYuANg/arcgo/pkg/randomport v0.0.4
 	github.com/danielgtaylor/huma/v2 v2.37.3
-	github.com/go-co-op/gocron/v2 v2.20.0
+	github.com/go-co-op/gocron/v2 v2.21.0
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/golang-jwt/jwt/v5 v5.3.1
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/samber/lo v1.53.0
 	github.com/samber/mo v1.16.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.50.0
 	golang.org/x/sys v0.43.0
 	golang.org/x/term v0.42.0
-	modernc.org/sqlite v1.48.2
+	modernc.org/sqlite v1.49.1
 )
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
 	4d63.com/gochecknoglobals v0.2.2 // indirect
-	ariga.io/atlas v1.1.0 // indirect
+	ariga.io/atlas v1.2.0 // indirect
 	cel.dev/expr v0.25.1 // indirect
 	charm.land/bubbles/v2 v2.1.0 // indirect
 	cloud.google.com/go v0.123.0 // indirect
@@ -70,10 +70,11 @@ require (
 	github.com/Antonboom/nilnil v1.1.1 // indirect
 	github.com/Antonboom/testifylint v1.6.4 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
+	github.com/DaiYuANg/arcgo/dbx/idgen v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/echo v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/gin v0.0.1 // indirect
-	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.1.3 // indirect
-	github.com/DaiYuANg/arcgo/observabilityx v0.2.1 // indirect
+	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.1.5 // indirect
+	github.com/DaiYuANg/arcgo/observabilityx v0.2.2 // indirect
 	github.com/DaiYuANg/arcgo/pkg/option v0.0.2 // indirect
 	github.com/Djarvur/go-err113 v0.1.1 // indirect
 	github.com/DmitriyVTitov/size v1.5.0 // indirect
@@ -139,8 +140,8 @@ require (
 	github.com/charithe/durationcheck v0.0.11 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260330092749-0f94982c930b // indirect
-	github.com/charmbracelet/x/ansi v0.11.6 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260416161146-9c68a866306c // indirect
+	github.com/charmbracelet/x/ansi v0.11.7 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect
@@ -370,7 +371,7 @@ require (
 	github.com/urfave/cli/v3 v3.7.0 // indirect
 	github.com/uudashr/gocognit v1.2.1 // indirect
 	github.com/uudashr/iface v1.4.1 // indirect
-	github.com/valkey-io/valkey-go v1.0.73 // indirect
+	github.com/valkey-io/valkey-go v1.0.74 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.70.0 // indirect
 	github.com/xen0n/gosmopolitan v1.3.0 // indirect
@@ -378,7 +379,7 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.3.0 // indirect
 	github.com/ykadowak/zerologlint v0.1.5 // indirect
-	github.com/zclconf/go-cty v1.18.0 // indirect
+	github.com/zclconf/go-cty v1.18.1 // indirect
 	github.com/zclconf/go-cty-yaml v1.2.0 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	gitlab.com/bosi/decorder v0.4.2 // indirect
@@ -421,7 +422,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.7.0 // indirect
-	modernc.org/libc v1.71.0 // indirect
+	modernc.org/libc v1.72.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	mvdan.cc/gofumpt v0.9.2 // indirect

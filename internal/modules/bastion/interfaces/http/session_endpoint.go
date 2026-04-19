@@ -6,7 +6,6 @@ import (
 )
 
 type SessionEndpoint struct {
-	httpx.BaseEndpoint
 	sessionSvc application.SessionService
 }
 
@@ -14,6 +13,10 @@ func NewSessionEndpoint(sessionSvc application.SessionService) *SessionEndpoint 
 	return &SessionEndpoint{sessionSvc: sessionSvc}
 }
 
-func (e *SessionEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	registerSessionRoutes(server.Group("/api"), e.sessionSvc)
+func (e *SessionEndpoint) EndpointSpec() httpx.EndpointSpec {
+	return httpx.EndpointSpec{Prefix: "/api"}
+}
+
+func (e *SessionEndpoint) Register(registrar httpx.Registrar) {
+	registerSessionRoutes(registrar.Scope(), e.sessionSvc)
 }

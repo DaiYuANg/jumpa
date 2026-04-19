@@ -6,7 +6,6 @@ import (
 )
 
 type OverviewEndpoint struct {
-	httpx.BaseEndpoint
 	overviewSvc application.OverviewService
 }
 
@@ -14,6 +13,10 @@ func NewOverviewEndpoint(overviewSvc application.OverviewService) *OverviewEndpo
 	return &OverviewEndpoint{overviewSvc: overviewSvc}
 }
 
-func (e *OverviewEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	registerOverviewRoutes(server.Group("/api"), e.overviewSvc)
+func (e *OverviewEndpoint) EndpointSpec() httpx.EndpointSpec {
+	return httpx.EndpointSpec{Prefix: "/api"}
+}
+
+func (e *OverviewEndpoint) Register(registrar httpx.Registrar) {
+	registerOverviewRoutes(registrar.Scope(), e.overviewSvc)
 }

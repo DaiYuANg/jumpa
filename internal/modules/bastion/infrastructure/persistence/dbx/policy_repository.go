@@ -8,7 +8,11 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/idgen"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 	"github.com/samber/mo"
 )
@@ -28,18 +32,18 @@ type policyRow struct {
 }
 
 type policySchema struct {
-	dbx.Schema[policyRow]
-	ID                dbx.IDColumn[policyRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
-	Name              dbx.Column[policyRow, string]                   `dbx:"name"`
-	SubjectType       dbx.Column[policyRow, string]                   `dbx:"subject_type"`
-	SubjectRef        dbx.Column[policyRow, string]                   `dbx:"subject_ref"`
-	TargetType        dbx.Column[policyRow, string]                   `dbx:"target_type"`
-	TargetRef         dbx.Column[policyRow, string]                   `dbx:"target_ref"`
-	AccountPattern    dbx.Column[policyRow, string]                   `dbx:"account_pattern"`
-	Protocol          dbx.Column[policyRow, string]                   `dbx:"protocol"`
-	ApprovalRequired  dbx.Column[policyRow, bool]                     `dbx:"approval_required"`
-	RecordingRequired dbx.Column[policyRow, bool]                     `dbx:"recording_required"`
-	CreatedAt         dbx.Column[policyRow, time.Time]                `dbx:"created_at"`
+	schemax.Schema[policyRow]
+	ID                columnx.IDColumn[policyRow, int64, idgen.IDSnowflake] `dbx:"id,pk"`
+	Name              columnx.Column[policyRow, string]                     `dbx:"name"`
+	SubjectType       columnx.Column[policyRow, string]                     `dbx:"subject_type"`
+	SubjectRef        columnx.Column[policyRow, string]                     `dbx:"subject_ref"`
+	TargetType        columnx.Column[policyRow, string]                     `dbx:"target_type"`
+	TargetRef         columnx.Column[policyRow, string]                     `dbx:"target_ref"`
+	AccountPattern    columnx.Column[policyRow, string]                     `dbx:"account_pattern"`
+	Protocol          columnx.Column[policyRow, string]                     `dbx:"protocol"`
+	ApprovalRequired  columnx.Column[policyRow, bool]                       `dbx:"approval_required"`
+	RecordingRequired columnx.Column[policyRow, bool]                       `dbx:"recording_required"`
+	CreatedAt         columnx.Column[policyRow, time.Time]                  `dbx:"created_at"`
 }
 
 type policyRepo struct {
@@ -48,7 +52,7 @@ type policyRepo struct {
 }
 
 func NewPolicyRepository(db *dbx.DB) ports.PolicyRepository {
-	ps := dbx.MustSchema("bastion_access_policies", policySchema{})
+	ps := schemax.MustSchema("bastion_access_policies", policySchema{})
 	return &policyRepo{ps: ps, repo: repository.New[policyRow](db, ps)}
 }
 
@@ -113,7 +117,7 @@ func (r *policyRepo) UpdatePolicy(ctx context.Context, id string, in ports.Patch
 	if err != nil {
 		return mo.None[ports.AccessPolicyRecord](), err
 	}
-	assignments := make([]dbx.Assignment, 0, 9)
+	assignments := make([]querydsl.Assignment, 0, 9)
 	if in.Name != nil {
 		assignments = append(assignments, r.ps.Name.Set(*in.Name))
 	}

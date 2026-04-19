@@ -8,7 +8,11 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/idgen"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 	"github.com/samber/mo"
 )
@@ -23,13 +27,13 @@ type hostAccountRow struct {
 }
 
 type hostAccountSchema struct {
-	dbx.Schema[hostAccountRow]
-	ID                 dbx.IDColumn[hostAccountRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
-	HostID             dbx.Column[hostAccountRow, int64]                    `dbx:"host_id"`
-	AccountName        dbx.Column[hostAccountRow, string]                   `dbx:"account_name"`
-	AuthenticationType dbx.Column[hostAccountRow, string]                   `dbx:"authentication_type"`
-	CredentialRef      dbx.Column[hostAccountRow, *string]                  `dbx:"credential_ref"`
-	CreatedAt          dbx.Column[hostAccountRow, time.Time]                `dbx:"created_at"`
+	schemax.Schema[hostAccountRow]
+	ID                 columnx.IDColumn[hostAccountRow, int64, idgen.IDSnowflake] `dbx:"id,pk"`
+	HostID             columnx.Column[hostAccountRow, int64]                      `dbx:"host_id"`
+	AccountName        columnx.Column[hostAccountRow, string]                     `dbx:"account_name"`
+	AuthenticationType columnx.Column[hostAccountRow, string]                     `dbx:"authentication_type"`
+	CredentialRef      columnx.Column[hostAccountRow, *string]                    `dbx:"credential_ref"`
+	CreatedAt          columnx.Column[hostAccountRow, time.Time]                  `dbx:"created_at"`
 }
 
 type hostAccountRepo struct {
@@ -38,7 +42,7 @@ type hostAccountRepo struct {
 }
 
 func NewHostAccountRepository(db *dbx.DB) ports.HostAccountRepository {
-	hs := dbx.MustSchema("bastion_host_accounts", hostAccountSchema{})
+	hs := schemax.MustSchema("bastion_host_accounts", hostAccountSchema{})
 	return &hostAccountRepo{hs: hs, repo: repository.New[hostAccountRow](db, hs)}
 }
 
@@ -126,7 +130,7 @@ func (r *hostAccountRepo) UpdateHostAccount(ctx context.Context, hostID, account
 	if err != nil {
 		return mo.None[ports.HostAccountRecord](), err
 	}
-	assignments := make([]dbx.Assignment, 0, 3)
+	assignments := make([]querydsl.Assignment, 0, 3)
 	if in.AccountName != nil {
 		assignments = append(assignments, r.hs.AccountName.Set(*in.AccountName))
 	}
@@ -139,7 +143,7 @@ func (r *hostAccountRepo) UpdateHostAccount(ctx context.Context, hostID, account
 	if len(assignments) == 0 {
 		return r.GetHostAccountByID(ctx, hostID, accountID)
 	}
-	res, err := r.repo.Update(ctx, dbx.Update(r.hs).
+	res, err := r.repo.Update(ctx, querydsl.Update(r.hs).
 		Set(assignments...).
 		Where(r.hs.HostID.Eq(hostKey)).
 		Where(r.hs.ID.Eq(accountKey)))
@@ -162,7 +166,7 @@ func (r *hostAccountRepo) DeleteHostAccount(ctx context.Context, hostID, account
 	if err != nil {
 		return false, err
 	}
-	res, err := r.repo.Delete(ctx, dbx.DeleteFrom(r.hs).Where(r.hs.HostID.Eq(hostKey)).Where(r.hs.ID.Eq(accountKey)))
+	res, err := r.repo.Delete(ctx, querydsl.DeleteFrom(r.hs).Where(r.hs.HostID.Eq(hostKey)).Where(r.hs.ID.Eq(accountKey)))
 	if err != nil {
 		return false, err
 	}

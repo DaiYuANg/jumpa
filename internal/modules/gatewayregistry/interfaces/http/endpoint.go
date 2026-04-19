@@ -12,7 +12,6 @@ import (
 )
 
 type GatewayEndpoint struct {
-	httpx.BaseEndpoint
 	service application.GatewayService
 }
 
@@ -20,8 +19,12 @@ func NewGatewayEndpoint(service application.GatewayService) *GatewayEndpoint {
 	return &GatewayEndpoint{service: service}
 }
 
-func (e *GatewayEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	api := server.Group("/api")
+func (e *GatewayEndpoint) EndpointSpec() httpx.EndpointSpec {
+	return httpx.EndpointSpec{Prefix: "/api"}
+}
+
+func (e *GatewayEndpoint) Register(registrar httpx.Registrar) {
+	api := registrar.Scope()
 	httpx.MustGroupGet(api, "/gateways", func(ctx context.Context, _ *struct{}) (*apiendpoints.DynamicOutput, error) {
 		items, err := e.service.List(ctx)
 		if err != nil {

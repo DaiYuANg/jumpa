@@ -8,6 +8,7 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
 	iamdomain "github.com/DaiYuANg/jumpa/internal/modules/iam/domain"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
@@ -33,7 +34,7 @@ func (r *userRepo) List(ctx context.Context, search string, limit, offset int) (
 	specs := []repository.Spec{repository.OrderBy(s.ID.Asc())}
 	if search != "" {
 		pattern := "%" + strings.TrimSpace(search) + "%"
-		specs = append(specs, repository.Where(dbx.Or(dbx.Like(s.Name, pattern), dbx.Like(s.Email, pattern))))
+		specs = append(specs, repository.Where(querydsl.Or(querydsl.Like(s.Name, pattern), querydsl.Like(s.Email, pattern))))
 	}
 	if limit <= 0 {
 		limit = 20
@@ -84,7 +85,7 @@ func (r *userRepo) Create(ctx context.Context, in iamdomain.CreateUserInput) (ia
 
 func (r *userRepo) Update(ctx context.Context, id int64, in iamdomain.UpdateUserInput) (mo.Option[iamdomain.User], error) {
 	s := r.schema
-	assignments := []dbx.Assignment{s.UpdatedAt.Set(time.Now().UTC())}
+	assignments := []querydsl.Assignment{s.UpdatedAt.Set(time.Now().UTC())}
 	if in.Name != nil {
 		assignments = append(assignments, s.Name.Set(*in.Name))
 	}

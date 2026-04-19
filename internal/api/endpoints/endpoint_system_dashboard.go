@@ -7,8 +7,8 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-func registerSystemEndpoints(server httpx.ServerRuntime) {
-	httpx.MustGet(server, "/health", func(ctx context.Context, _ *struct{}) (*HealthOutput, error) {
+func registerSystemEndpoints(group *httpx.Group) {
+	httpx.MustGroupGet(group, "/health", func(ctx context.Context, _ *struct{}) (*HealthOutput, error) {
 		out := &HealthOutput{}
 		out.Body.Status = "UP"
 		return out, nil

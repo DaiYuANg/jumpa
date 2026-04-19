@@ -7,6 +7,10 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	mapperx "github.com/DaiYuANg/arcgo/dbx/mapper"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/samber/mo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,13 +30,13 @@ type localUserRow struct {
 }
 
 type localUserSchema struct {
-	dbx.Schema[localUserRow]
-	ID           dbx.Column[localUserRow, string]    `dbx:"id,pk"`
-	Username     dbx.Column[localUserRow, string]    `dbx:"username"`
-	Email        dbx.Column[localUserRow, string]    `dbx:"email"`
-	PasswordHash dbx.Column[localUserRow, string]    `dbx:"password_hash"`
-	IsActive     dbx.Column[localUserRow, bool]      `dbx:"is_active"`
-	CreatedAt    dbx.Column[localUserRow, time.Time] `dbx:"created_at"`
+	schemax.Schema[localUserRow]
+	ID           columnx.Column[localUserRow, string]    `dbx:"id,pk"`
+	Username     columnx.Column[localUserRow, string]    `dbx:"username"`
+	Email        columnx.Column[localUserRow, string]    `dbx:"email"`
+	PasswordHash columnx.Column[localUserRow, string]    `dbx:"password_hash"`
+	IsActive     columnx.Column[localUserRow, bool]      `dbx:"is_active"`
+	CreatedAt    columnx.Column[localUserRow, time.Time] `dbx:"created_at"`
 }
 
 func NewLocalAuthenticator(provider ProviderDescriptor, db *dbx.DB) Authenticator {
@@ -79,20 +83,20 @@ func (a *localAuthenticator) AuthenticatePassword(ctx context.Context, credentia
 }
 
 func (a *localAuthenticator) findUser(ctx context.Context, usernameOrEmail string) (mo.Option[localUserRow], error) {
-	us := dbx.MustSchema("users", localUserSchema{})
+	us := schemax.MustSchema("users", localUserSchema{})
 	value := strings.TrimSpace(usernameOrEmail)
 
 	rows, err := dbx.QueryAll[localUserRow](
 		ctx,
 		a.db,
-		dbx.Select(us.AllColumns().Values()...).
+		querydsl.Select(querydsl.AllColumns(us).Values()...).
 			From(us).
-			Where(dbx.Or(
+			Where(querydsl.Or(
 				us.Username.Eq(value),
 				us.Email.Eq(value),
 			)).
 			Limit(1),
-		dbx.MustMapper[localUserRow](us),
+		mapperx.MustMapper[localUserRow](us),
 	)
 	if err != nil {
 		return mo.None[localUserRow](), err

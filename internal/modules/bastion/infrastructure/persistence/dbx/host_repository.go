@@ -8,7 +8,11 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/idgen"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 	"github.com/samber/mo"
 )
@@ -29,19 +33,19 @@ type hostRow struct {
 }
 
 type hostSchema struct {
-	dbx.Schema[hostRow]
-	ID                 dbx.IDColumn[hostRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
-	Name               dbx.Column[hostRow, string]                   `dbx:"name"`
-	Address            dbx.Column[hostRow, string]                   `dbx:"address"`
-	Port               dbx.Column[hostRow, int]                      `dbx:"port"`
-	Protocol           dbx.Column[hostRow, string]                   `dbx:"protocol"`
-	Environment        dbx.Column[hostRow, *string]                  `dbx:"environment"`
-	Platform           dbx.Column[hostRow, *string]                  `dbx:"platform"`
-	AuthenticationType dbx.Column[hostRow, string]                   `dbx:"authentication_type"`
-	CredentialRef      dbx.Column[hostRow, *string]                  `dbx:"credential_ref"`
-	JumpEnabled        dbx.Column[hostRow, bool]                     `dbx:"jump_enabled"`
-	RecordingPolicy    dbx.Column[hostRow, string]                   `dbx:"recording_policy"`
-	CreatedAt          dbx.Column[hostRow, time.Time]                `dbx:"created_at"`
+	schemax.Schema[hostRow]
+	ID                 columnx.IDColumn[hostRow, int64, idgen.IDSnowflake] `dbx:"id,pk"`
+	Name               columnx.Column[hostRow, string]                     `dbx:"name"`
+	Address            columnx.Column[hostRow, string]                     `dbx:"address"`
+	Port               columnx.Column[hostRow, int]                        `dbx:"port"`
+	Protocol           columnx.Column[hostRow, string]                     `dbx:"protocol"`
+	Environment        columnx.Column[hostRow, *string]                    `dbx:"environment"`
+	Platform           columnx.Column[hostRow, *string]                    `dbx:"platform"`
+	AuthenticationType columnx.Column[hostRow, string]                     `dbx:"authentication_type"`
+	CredentialRef      columnx.Column[hostRow, *string]                    `dbx:"credential_ref"`
+	JumpEnabled        columnx.Column[hostRow, bool]                       `dbx:"jump_enabled"`
+	RecordingPolicy    columnx.Column[hostRow, string]                     `dbx:"recording_policy"`
+	CreatedAt          columnx.Column[hostRow, time.Time]                  `dbx:"created_at"`
 }
 
 type hostRepo struct {
@@ -50,7 +54,7 @@ type hostRepo struct {
 }
 
 func NewHostRepository(db *dbx.DB) ports.HostRepository {
-	hs := dbx.MustSchema("bastion_hosts", hostSchema{})
+	hs := schemax.MustSchema("bastion_hosts", hostSchema{})
 	return &hostRepo{hs: hs, repo: repository.New[hostRow](db, hs)}
 }
 
@@ -115,7 +119,7 @@ func (r *hostRepo) UpdateHost(ctx context.Context, id string, in ports.PatchHost
 	if err != nil {
 		return mo.None[ports.HostRecord](), err
 	}
-	assignments := make([]dbx.Assignment, 0, 10)
+	assignments := make([]querydsl.Assignment, 0, 10)
 	if in.Name != nil {
 		assignments = append(assignments, r.hs.Name.Set(*in.Name))
 	}

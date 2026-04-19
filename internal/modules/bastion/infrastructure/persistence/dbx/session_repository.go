@@ -7,7 +7,11 @@ import (
 	"time"
 
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/idgen"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 	"github.com/samber/mo"
 )
@@ -25,16 +29,16 @@ type sessionRow struct {
 }
 
 type sessionSchema struct {
-	dbx.Schema[sessionRow]
-	ID            dbx.IDColumn[sessionRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
-	HostID        dbx.Column[sessionRow, int64]                    `dbx:"host_id"`
-	HostAccountID dbx.Column[sessionRow, *int64]                   `dbx:"host_account_id"`
-	PrincipalID   dbx.Column[sessionRow, string]                   `dbx:"principal_id"`
-	Protocol      dbx.Column[sessionRow, string]                   `dbx:"protocol"`
-	Status        dbx.Column[sessionRow, string]                   `dbx:"status"`
-	SourceAddr    dbx.Column[sessionRow, *string]                  `dbx:"source_addr"`
-	StartedAt     dbx.Column[sessionRow, time.Time]                `dbx:"started_at"`
-	EndedAt       dbx.Column[sessionRow, *time.Time]               `dbx:"ended_at"`
+	schemax.Schema[sessionRow]
+	ID            columnx.IDColumn[sessionRow, int64, idgen.IDSnowflake] `dbx:"id,pk"`
+	HostID        columnx.Column[sessionRow, int64]                      `dbx:"host_id"`
+	HostAccountID columnx.Column[sessionRow, *int64]                     `dbx:"host_account_id"`
+	PrincipalID   columnx.Column[sessionRow, string]                     `dbx:"principal_id"`
+	Protocol      columnx.Column[sessionRow, string]                     `dbx:"protocol"`
+	Status        columnx.Column[sessionRow, string]                     `dbx:"status"`
+	SourceAddr    columnx.Column[sessionRow, *string]                    `dbx:"source_addr"`
+	StartedAt     columnx.Column[sessionRow, time.Time]                  `dbx:"started_at"`
+	EndedAt       columnx.Column[sessionRow, *time.Time]                 `dbx:"ended_at"`
 }
 
 type sessionRepo struct {
@@ -44,7 +48,7 @@ type sessionRepo struct {
 }
 
 func NewSessionRepository(db *dbx.DB) ports.SessionRepository {
-	ss := dbx.MustSchema("bastion_sessions", sessionSchema{})
+	ss := schemax.MustSchema("bastion_sessions", sessionSchema{})
 	return &sessionRepo{db: db, ss: ss, repo: repository.New[sessionRow](db, ss)}
 }
 
@@ -79,7 +83,7 @@ func (r *sessionRepo) UpdateSessionStatus(ctx context.Context, id, status string
 	if err != nil {
 		return err
 	}
-	assignments := []dbx.Assignment{
+	assignments := []querydsl.Assignment{
 		r.ss.Status.Set(status),
 		r.ss.EndedAt.Set(endedAt),
 	}

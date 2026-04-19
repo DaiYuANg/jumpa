@@ -9,6 +9,10 @@ import (
 	"github.com/DaiYuANg/arcgo/authx"
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	mapperx "github.com/DaiYuANg/arcgo/dbx/mapper"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/kvx"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
@@ -30,9 +34,9 @@ type authPrincipalRow struct {
 }
 
 type authPrincipalSchema struct {
-	dbx.Schema[authPrincipalRow]
-	ID    dbx.Column[authPrincipalRow, string] `dbx:"id,pk"`
-	Email dbx.Column[authPrincipalRow, string] `dbx:"email"`
+	schemax.Schema[authPrincipalRow]
+	ID    columnx.Column[authPrincipalRow, string] `dbx:"id,pk"`
+	Email columnx.Column[authPrincipalRow, string] `dbx:"email"`
 }
 
 type authPrincipalRoleRow struct {
@@ -40,9 +44,9 @@ type authPrincipalRoleRow struct {
 	Role        string `dbx:"role"`
 }
 type authPrincipalRoleSchema struct {
-	dbx.Schema[authPrincipalRoleRow]
-	PrincipalID dbx.Column[authPrincipalRoleRow, string] `dbx:"principal_id"`
-	Role        dbx.Column[authPrincipalRoleRow, string] `dbx:"role"`
+	schemax.Schema[authPrincipalRoleRow]
+	PrincipalID columnx.Column[authPrincipalRoleRow, string] `dbx:"principal_id"`
+	Role        columnx.Column[authPrincipalRoleRow, string] `dbx:"role"`
 }
 
 type authPrincipalPermissionRow struct {
@@ -50,9 +54,9 @@ type authPrincipalPermissionRow struct {
 	Permission  string `dbx:"permission"`
 }
 type authPrincipalPermissionSchema struct {
-	dbx.Schema[authPrincipalPermissionRow]
-	PrincipalID dbx.Column[authPrincipalPermissionRow, string] `dbx:"principal_id"`
-	Permission  dbx.Column[authPrincipalPermissionRow, string] `dbx:"permission"`
+	schemax.Schema[authPrincipalPermissionRow]
+	PrincipalID columnx.Column[authPrincipalPermissionRow, string] `dbx:"principal_id"`
+	Permission  columnx.Column[authPrincipalPermissionRow, string] `dbx:"permission"`
 }
 
 func revokedKey(jti string) string { return "auth:revoked:" + jti }
@@ -72,12 +76,12 @@ func parseAccessToken(secret, issuer, token string) (*jwtClaims, error) {
 }
 
 func principalFromDB(ctx context.Context, db *dbx.DB, email string) (mo.Option[authx.Principal], error) {
-	ps := dbx.MustSchema("app_auth_principals", authPrincipalSchema{})
-	prs := dbx.MustSchema("app_auth_principal_roles", authPrincipalRoleSchema{})
-	pps := dbx.MustSchema("app_auth_principal_permissions", authPrincipalPermissionSchema{})
+	ps := schemax.MustSchema("app_auth_principals", authPrincipalSchema{})
+	prs := schemax.MustSchema("app_auth_principal_roles", authPrincipalRoleSchema{})
+	pps := schemax.MustSchema("app_auth_principal_permissions", authPrincipalPermissionSchema{})
 	rows, err := dbx.QueryAll[authPrincipalRow](ctx, db,
-		dbx.Select(ps.AllColumns().Values()...).From(ps).Where(ps.Email.Eq(strings.ToLower(strings.TrimSpace(email)))),
-		dbx.MustMapper[authPrincipalRow](ps),
+		querydsl.Select(querydsl.AllColumns(ps).Values()...).From(ps).Where(ps.Email.Eq(strings.ToLower(strings.TrimSpace(email)))),
+		mapperx.MustMapper[authPrincipalRow](ps),
 	)
 	if err != nil {
 		return mo.None[authx.Principal](), err
@@ -88,15 +92,15 @@ func principalFromDB(ctx context.Context, db *dbx.DB, email string) (mo.Option[a
 	}
 	row := rowOpt.MustGet()
 	roleRows, err := dbx.QueryAll[authPrincipalRoleRow](ctx, db,
-		dbx.Select(prs.AllColumns().Values()...).From(prs).Where(prs.PrincipalID.Eq(row.ID)),
-		dbx.MustMapper[authPrincipalRoleRow](prs),
+		querydsl.Select(querydsl.AllColumns(prs).Values()...).From(prs).Where(prs.PrincipalID.Eq(row.ID)),
+		mapperx.MustMapper[authPrincipalRoleRow](prs),
 	)
 	if err != nil {
 		return mo.None[authx.Principal](), err
 	}
 	permRows, err := dbx.QueryAll[authPrincipalPermissionRow](ctx, db,
-		dbx.Select(pps.AllColumns().Values()...).From(pps).Where(pps.PrincipalID.Eq(row.ID)),
-		dbx.MustMapper[authPrincipalPermissionRow](pps),
+		querydsl.Select(querydsl.AllColumns(pps).Values()...).From(pps).Where(pps.PrincipalID.Eq(row.ID)),
+		mapperx.MustMapper[authPrincipalPermissionRow](pps),
 	)
 	if err != nil {
 		return mo.None[authx.Principal](), err

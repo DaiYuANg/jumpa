@@ -6,6 +6,10 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	mapperx "github.com/DaiYuANg/arcgo/dbx/mapper"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 )
 
@@ -15,9 +19,9 @@ type principalAccessPrincipalRow struct {
 }
 
 type principalAccessPrincipalSchema struct {
-	dbx.Schema[principalAccessPrincipalRow]
-	ID    dbx.Column[principalAccessPrincipalRow, string] `dbx:"id,pk"`
-	Email dbx.Column[principalAccessPrincipalRow, string] `dbx:"email"`
+	schemax.Schema[principalAccessPrincipalRow]
+	ID    columnx.Column[principalAccessPrincipalRow, string] `dbx:"id,pk"`
+	Email columnx.Column[principalAccessPrincipalRow, string] `dbx:"email"`
 }
 
 type principalAccessRoleRow struct {
@@ -26,9 +30,9 @@ type principalAccessRoleRow struct {
 }
 
 type principalAccessRoleSchema struct {
-	dbx.Schema[principalAccessRoleRow]
-	PrincipalID dbx.Column[principalAccessRoleRow, string] `dbx:"principal_id"`
-	Role        dbx.Column[principalAccessRoleRow, string] `dbx:"role"`
+	schemax.Schema[principalAccessRoleRow]
+	PrincipalID columnx.Column[principalAccessRoleRow, string] `dbx:"principal_id"`
+	Role        columnx.Column[principalAccessRoleRow, string] `dbx:"role"`
 }
 
 type principalAccessRepo struct {
@@ -40,8 +44,8 @@ type principalAccessRepo struct {
 func NewPrincipalAccessRepository(db *dbx.DB) ports.PrincipalAccessRepository {
 	return &principalAccessRepo{
 		db:  db,
-		ps:  dbx.MustSchema("app_auth_principals", principalAccessPrincipalSchema{}),
-		prs: dbx.MustSchema("app_auth_principal_roles", principalAccessRoleSchema{}),
+		ps:  schemax.MustSchema("app_auth_principals", principalAccessPrincipalSchema{}),
+		prs: schemax.MustSchema("app_auth_principal_roles", principalAccessRoleSchema{}),
 	}
 }
 
@@ -54,8 +58,8 @@ func (r *principalAccessRepo) ListRoleIDsByEmail(ctx context.Context, email stri
 	principals, err := dbx.QueryAll[principalAccessPrincipalRow](
 		ctx,
 		r.db,
-		dbx.Select(r.ps.AllColumns().Values()...).From(r.ps).Where(r.ps.Email.Eq(value)).Limit(1),
-		dbx.MustMapper[principalAccessPrincipalRow](r.ps),
+		querydsl.Select(querydsl.AllColumns(r.ps).Values()...).From(r.ps).Where(r.ps.Email.Eq(value)).Limit(1),
+		mapperx.MustMapper[principalAccessPrincipalRow](r.ps),
 	)
 	if err != nil {
 		return nil, err
@@ -68,8 +72,8 @@ func (r *principalAccessRepo) ListRoleIDsByEmail(ctx context.Context, email stri
 	rows, err := dbx.QueryAll[principalAccessRoleRow](
 		ctx,
 		r.db,
-		dbx.Select(r.prs.AllColumns().Values()...).From(r.prs).Where(r.prs.PrincipalID.Eq(principal.MustGet().ID)),
-		dbx.MustMapper[principalAccessRoleRow](r.prs),
+		querydsl.Select(querydsl.AllColumns(r.prs).Values()...).From(r.prs).Where(r.prs.PrincipalID.Eq(principal.MustGet().ID)),
+		mapperx.MustMapper[principalAccessRoleRow](r.prs),
 	)
 	if err != nil {
 		return nil, err

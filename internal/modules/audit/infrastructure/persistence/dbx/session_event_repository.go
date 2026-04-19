@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/idgen"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/audit/ports"
 )
 
@@ -19,12 +22,12 @@ type sessionEventRow struct {
 }
 
 type sessionEventSchema struct {
-	dbx.Schema[sessionEventRow]
-	ID        dbx.IDColumn[sessionEventRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
-	SessionID dbx.Column[sessionEventRow, int64]                    `dbx:"session_id"`
-	EventType dbx.Column[sessionEventRow, string]                   `dbx:"event_type"`
-	Payload   dbx.Column[sessionEventRow, *string]                  `dbx:"payload"`
-	CreatedAt dbx.Column[sessionEventRow, time.Time]                `dbx:"created_at"`
+	schemax.Schema[sessionEventRow]
+	ID        columnx.IDColumn[sessionEventRow, int64, idgen.IDSnowflake] `dbx:"id,pk"`
+	SessionID columnx.Column[sessionEventRow, int64]                      `dbx:"session_id"`
+	EventType columnx.Column[sessionEventRow, string]                     `dbx:"event_type"`
+	Payload   columnx.Column[sessionEventRow, *string]                    `dbx:"payload"`
+	CreatedAt columnx.Column[sessionEventRow, time.Time]                  `dbx:"created_at"`
 }
 
 type sessionEventRepo struct {
@@ -32,7 +35,7 @@ type sessionEventRepo struct {
 }
 
 func NewSessionEventRepository(db *dbx.DB) ports.SessionEventRepository {
-	ss := dbx.MustSchema("bastion_session_events", sessionEventSchema{})
+	ss := schemax.MustSchema("bastion_session_events", sessionEventSchema{})
 	return &sessionEventRepo{repo: repository.New[sessionEventRow](db, ss)}
 }
 

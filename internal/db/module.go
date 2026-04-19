@@ -4,10 +4,11 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/DaiYuANg/arcgo/dbx"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
+	"github.com/DaiYuANg/arcgo/dix"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
 	"github.com/DaiYuANg/jumpa/internal/schema"
-	"github.com/DaiYuANg/arcgo/dbx"
-	"github.com/DaiYuANg/arcgo/dix"
 )
 
 var Module = dix.NewModule("db",
@@ -26,7 +27,7 @@ var Module = dix.NewModule("db",
 		}),
 		dix.Provider0(func() schema.UserSchema {
 			s := schema.UserSchema{}
-			return dbx.MustSchema("users", s)
+			return schemax.MustSchema("users", s)
 		}),
 	),
 	dix.WithModuleSetup(func(c *dix.Container, lc dix.Lifecycle) error {

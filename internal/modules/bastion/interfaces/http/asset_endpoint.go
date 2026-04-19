@@ -6,7 +6,6 @@ import (
 )
 
 type AssetEndpoint struct {
-	httpx.BaseEndpoint
 	assetSvc application.AssetService
 }
 
@@ -14,6 +13,10 @@ func NewAssetEndpoint(assetSvc application.AssetService) *AssetEndpoint {
 	return &AssetEndpoint{assetSvc: assetSvc}
 }
 
-func (e *AssetEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	registerAssetRoutes(server.Group("/api"), e.assetSvc)
+func (e *AssetEndpoint) EndpointSpec() httpx.EndpointSpec {
+	return httpx.EndpointSpec{Prefix: "/api"}
+}
+
+func (e *AssetEndpoint) Register(registrar httpx.Registrar) {
+	registerAssetRoutes(registrar.Scope(), e.assetSvc)
 }

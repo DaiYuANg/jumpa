@@ -7,7 +7,10 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 	"github.com/samber/mo"
 )
@@ -20,11 +23,11 @@ type permissionGroupRow struct {
 }
 
 type permissionGroupSchema struct {
-	dbx.Schema[permissionGroupRow]
-	ID          dbx.Column[permissionGroupRow, string]    `dbx:"id,pk"`
-	Name        dbx.Column[permissionGroupRow, string]    `dbx:"name"`
-	Description dbx.Column[permissionGroupRow, string]    `dbx:"description"`
-	CreatedAt   dbx.Column[permissionGroupRow, time.Time] `dbx:"created_at,codec=rfc3339_time"`
+	schemax.Schema[permissionGroupRow]
+	ID          columnx.Column[permissionGroupRow, string]    `dbx:"id,pk"`
+	Name        columnx.Column[permissionGroupRow, string]    `dbx:"name"`
+	Description columnx.Column[permissionGroupRow, string]    `dbx:"description"`
+	CreatedAt   columnx.Column[permissionGroupRow, time.Time] `dbx:"created_at,codec=rfc3339_time"`
 }
 
 type permissionGroupRepo struct {
@@ -33,7 +36,7 @@ type permissionGroupRepo struct {
 }
 
 func NewPermissionGroupRepository(db *dbx.DB) ports.PermissionGroupRepository {
-	pgs := dbx.MustSchema("app_permission_groups", permissionGroupSchema{})
+	pgs := schemax.MustSchema("app_permission_groups", permissionGroupSchema{})
 	return &permissionGroupRepo{
 		pgs:       pgs,
 		groupRepo: repository.New[permissionGroupRow](db, pgs),
@@ -75,7 +78,7 @@ func (r *permissionGroupRepo) CreatePermissionGroup(ctx context.Context, in port
 }
 
 func (r *permissionGroupRepo) UpdatePermissionGroup(ctx context.Context, id string, in ports.PatchPermissionGroupInput) (mo.Option[ports.PermissionGroup], error) {
-	var assignments []dbx.Assignment
+	var assignments []querydsl.Assignment
 	if in.Name != nil {
 		assignments = append(assignments, r.pgs.Name.Set(*in.Name))
 	}

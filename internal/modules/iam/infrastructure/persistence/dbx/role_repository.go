@@ -6,6 +6,10 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	mapperx "github.com/DaiYuANg/arcgo/dbx/mapper"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 	"github.com/samber/mo"
 )
@@ -18,11 +22,11 @@ type roleRow struct {
 }
 
 type roleSchema struct {
-	dbx.Schema[roleRow]
-	ID          dbx.Column[roleRow, string]    `dbx:"id,pk"`
-	Name        dbx.Column[roleRow, string]    `dbx:"name"`
-	Description dbx.Column[roleRow, string]    `dbx:"description"`
-	CreatedAt   dbx.Column[roleRow, time.Time] `dbx:"created_at,codec=rfc3339_time"`
+	schemax.Schema[roleRow]
+	ID          columnx.Column[roleRow, string]    `dbx:"id,pk"`
+	Name        columnx.Column[roleRow, string]    `dbx:"name"`
+	Description columnx.Column[roleRow, string]    `dbx:"description"`
+	CreatedAt   columnx.Column[roleRow, time.Time] `dbx:"created_at,codec=rfc3339_time"`
 }
 
 type rolePermissionGroupRow struct {
@@ -31,28 +35,28 @@ type rolePermissionGroupRow struct {
 }
 
 type rolePermissionGroupSchema struct {
-	dbx.Schema[rolePermissionGroupRow]
-	RoleID            dbx.Column[rolePermissionGroupRow, string] `dbx:"role_id"`
-	PermissionGroupID dbx.Column[rolePermissionGroupRow, string] `dbx:"permission_group_id"`
+	schemax.Schema[rolePermissionGroupRow]
+	RoleID            columnx.Column[rolePermissionGroupRow, string] `dbx:"role_id"`
+	PermissionGroupID columnx.Column[rolePermissionGroupRow, string] `dbx:"permission_group_id"`
 }
 
 type roleRepo struct {
 	session dbx.Session
 	rs      roleSchema
-	mapper  dbx.Mapper[roleRow]
+	mapper  mapperx.Mapper[roleRow]
 }
 
 func NewRoleRepository(session dbx.Session) ports.RoleRepository {
-	rs := dbx.MustSchema("app_roles", roleSchema{})
+	rs := schemax.MustSchema("app_roles", roleSchema{})
 	return &roleRepo{
 		session: session,
 		rs:      rs,
-		mapper:  dbx.MustMapper[roleRow](rs),
+		mapper:  mapperx.MustMapper[roleRow](rs),
 	}
 }
 
 func (r *roleRepo) ListRoles(ctx context.Context) ([]ports.RoleRecord, error) {
-	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns().Values()...).From(r.rs).OrderBy(r.rs.ID.Asc()), r.mapper)
+	rows, err := dbx.QueryAll[roleRow](ctx, r.session, querydsl.Select(querydsl.AllColumns(r.rs).Values()...).From(r.rs).OrderBy(r.rs.ID.Asc()), r.mapper)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +66,7 @@ func (r *roleRepo) ListRoles(ctx context.Context) ([]ports.RoleRecord, error) {
 }
 
 func (r *roleRepo) GetRole(ctx context.Context, id string) (mo.Option[ports.RoleRecord], error) {
-	rows, err := dbx.QueryAll[roleRow](ctx, r.session, dbx.Select(r.rs.AllColumns().Values()...).From(r.rs).Where(r.rs.ID.Eq(id)), r.mapper)
+	rows, err := dbx.QueryAll[roleRow](ctx, r.session, querydsl.Select(querydsl.AllColumns(r.rs).Values()...).From(r.rs).Where(r.rs.ID.Eq(id)), r.mapper)
 	if err != nil {
 		return mo.None[ports.RoleRecord](), err
 	}
@@ -77,7 +81,7 @@ func (r *roleRepo) GetRole(ctx context.Context, id string) (mo.Option[ports.Role
 func (r *roleRepo) CreateRole(ctx context.Context, in ports.CreateRoleInput) (ports.RoleRecord, error) {
 	now := time.Now().UTC()
 	row := roleRow{ID: in.ID, Name: in.Name, Description: in.Description, CreatedAt: now}
-	_, err := dbx.Exec(ctx, r.session, dbx.InsertInto(r.rs).
+	_, err := dbx.Exec(ctx, r.session, querydsl.InsertInto(r.rs).
 		Columns(r.rs.ID, r.rs.Name, r.rs.Description, r.rs.CreatedAt).
 		Values(r.rs.ID.Set(row.ID), r.rs.Name.Set(row.Name), r.rs.Description.Set(row.Description), r.rs.CreatedAt.Set(row.CreatedAt)))
 	if err != nil {
@@ -87,7 +91,7 @@ func (r *roleRepo) CreateRole(ctx context.Context, in ports.CreateRoleInput) (po
 }
 
 func (r *roleRepo) UpdateRole(ctx context.Context, id string, in ports.PatchRoleInput) (mo.Option[ports.RoleRecord], error) {
-	assignments := []dbx.Assignment{}
+	assignments := []querydsl.Assignment{}
 	if in.Name != nil {
 		assignments = append(assignments, r.rs.Name.Set(*in.Name))
 	}
@@ -97,7 +101,7 @@ func (r *roleRepo) UpdateRole(ctx context.Context, id string, in ports.PatchRole
 	if len(assignments) == 0 {
 		return r.GetRole(ctx, id)
 	}
-	res, err := dbx.Exec(ctx, r.session, dbx.Update(r.rs).Set(assignments...).Where(r.rs.ID.Eq(id)))
+	res, err := dbx.Exec(ctx, r.session, querydsl.Update(r.rs).Set(assignments...).Where(r.rs.ID.Eq(id)))
 	if err != nil {
 		return mo.None[ports.RoleRecord](), err
 	}
@@ -109,7 +113,7 @@ func (r *roleRepo) UpdateRole(ctx context.Context, id string, in ports.PatchRole
 }
 
 func (r *roleRepo) DeleteRole(ctx context.Context, id string) (bool, error) {
-	res, err := dbx.Exec(ctx, r.session, dbx.DeleteFrom(r.rs).Where(r.rs.ID.Eq(id)))
+	res, err := dbx.Exec(ctx, r.session, querydsl.DeleteFrom(r.rs).Where(r.rs.ID.Eq(id)))
 	if err != nil {
 		return false, err
 	}

@@ -6,7 +6,6 @@ import (
 )
 
 type AccessEndpoint struct {
-	httpx.BaseEndpoint
 	policySvc  application.PolicyService
 	requestSvc application.AccessRequestService
 }
@@ -18,6 +17,10 @@ func NewAccessEndpoint(policySvc application.PolicyService, requestSvc applicati
 	}
 }
 
-func (e *AccessEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	registerAccessRoutes(server.Group("/api"), e.policySvc, e.requestSvc)
+func (e *AccessEndpoint) EndpointSpec() httpx.EndpointSpec {
+	return httpx.EndpointSpec{Prefix: "/api"}
+}
+
+func (e *AccessEndpoint) Register(registrar httpx.Registrar) {
+	registerAccessRoutes(registrar.Scope(), e.policySvc, e.requestSvc)
 }

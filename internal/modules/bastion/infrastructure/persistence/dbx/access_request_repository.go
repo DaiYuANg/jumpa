@@ -9,7 +9,11 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/idgen"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 	"github.com/samber/mo"
 )
@@ -33,22 +37,22 @@ type accessRequestRow struct {
 }
 
 type accessRequestSchema struct {
-	dbx.Schema[accessRequestRow]
-	ID                dbx.IDColumn[accessRequestRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
-	PolicyID          dbx.Column[accessRequestRow, int64]                    `dbx:"policy_id"`
-	PrincipalName     dbx.Column[accessRequestRow, string]                   `dbx:"principal_name"`
-	PrincipalEmail    dbx.Column[accessRequestRow, *string]                  `dbx:"principal_email"`
-	HostName          dbx.Column[accessRequestRow, string]                   `dbx:"host_name"`
-	HostAccount       dbx.Column[accessRequestRow, string]                   `dbx:"host_account"`
-	Protocol          dbx.Column[accessRequestRow, string]                   `dbx:"protocol"`
-	Status            dbx.Column[accessRequestRow, string]                   `dbx:"status"`
-	RequestedAt       dbx.Column[accessRequestRow, time.Time]                `dbx:"requested_at"`
-	ReviewedAt        dbx.Column[accessRequestRow, *time.Time]               `dbx:"reviewed_at"`
-	ReviewedBy        dbx.Column[accessRequestRow, *string]                  `dbx:"reviewed_by"`
-	ReviewComment     dbx.Column[accessRequestRow, *string]                  `dbx:"review_comment"`
-	ApprovedUntil     dbx.Column[accessRequestRow, *time.Time]               `dbx:"approved_until"`
-	ConsumedAt        dbx.Column[accessRequestRow, *time.Time]               `dbx:"consumed_at"`
-	ConsumedSessionID dbx.Column[accessRequestRow, *int64]                   `dbx:"consumed_session_id"`
+	schemax.Schema[accessRequestRow]
+	ID                columnx.IDColumn[accessRequestRow, int64, idgen.IDSnowflake] `dbx:"id,pk"`
+	PolicyID          columnx.Column[accessRequestRow, int64]                      `dbx:"policy_id"`
+	PrincipalName     columnx.Column[accessRequestRow, string]                     `dbx:"principal_name"`
+	PrincipalEmail    columnx.Column[accessRequestRow, *string]                    `dbx:"principal_email"`
+	HostName          columnx.Column[accessRequestRow, string]                     `dbx:"host_name"`
+	HostAccount       columnx.Column[accessRequestRow, string]                     `dbx:"host_account"`
+	Protocol          columnx.Column[accessRequestRow, string]                     `dbx:"protocol"`
+	Status            columnx.Column[accessRequestRow, string]                     `dbx:"status"`
+	RequestedAt       columnx.Column[accessRequestRow, time.Time]                  `dbx:"requested_at"`
+	ReviewedAt        columnx.Column[accessRequestRow, *time.Time]                 `dbx:"reviewed_at"`
+	ReviewedBy        columnx.Column[accessRequestRow, *string]                    `dbx:"reviewed_by"`
+	ReviewComment     columnx.Column[accessRequestRow, *string]                    `dbx:"review_comment"`
+	ApprovedUntil     columnx.Column[accessRequestRow, *time.Time]                 `dbx:"approved_until"`
+	ConsumedAt        columnx.Column[accessRequestRow, *time.Time]                 `dbx:"consumed_at"`
+	ConsumedSessionID columnx.Column[accessRequestRow, *int64]                     `dbx:"consumed_session_id"`
 }
 
 type accessRequestRepo struct {
@@ -57,7 +61,7 @@ type accessRequestRepo struct {
 }
 
 func NewAccessRequestRepository(db *dbx.DB) ports.AccessRequestRepository {
-	ars := dbx.MustSchema("bastion_access_requests", accessRequestSchema{})
+	ars := schemax.MustSchema("bastion_access_requests", accessRequestSchema{})
 	return &accessRequestRepo{ars: ars, repo: repository.New[accessRequestRow](db, ars)}
 }
 
@@ -152,7 +156,7 @@ func (r *accessRequestRepo) UpdateRequestStatus(ctx context.Context, id, status 
 	if err != nil {
 		return mo.None[ports.AccessRequestRecord](), err
 	}
-	assignments := []dbx.Assignment{
+	assignments := []querydsl.Assignment{
 		r.ars.Status.Set(status),
 		r.ars.ReviewedAt.Set(&reviewedAt),
 		r.ars.ReviewedBy.Set(&reviewedBy),
@@ -185,7 +189,7 @@ func (r *accessRequestRepo) ConsumeRequest(ctx context.Context, id string, consu
 		}
 		consumedSessionIDInt = &value
 	}
-	assignments := []dbx.Assignment{
+	assignments := []querydsl.Assignment{
 		r.ars.Status.Set("consumed"),
 		r.ars.ConsumedAt.Set(&consumedAt),
 		r.ars.ConsumedSessionID.Set(consumedSessionIDInt),

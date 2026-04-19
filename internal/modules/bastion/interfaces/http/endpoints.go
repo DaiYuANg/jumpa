@@ -1,9 +1,5 @@
 package http
 
-import "github.com/DaiYuANg/arcgo/httpx"
-
-type Endpoints []httpx.Endpoint
-
 func boolOr(value *bool, fallback bool) bool {
 	if value == nil {
 		return fallback

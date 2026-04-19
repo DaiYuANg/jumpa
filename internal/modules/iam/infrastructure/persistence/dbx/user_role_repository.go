@@ -5,7 +5,10 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 
@@ -15,9 +18,9 @@ type userRoleRow struct {
 }
 
 type userRoleSchema struct {
-	dbx.Schema[userRoleRow]
-	UserID dbx.Column[userRoleRow, int64]  `dbx:"user_id"`
-	RoleID dbx.Column[userRoleRow, string] `dbx:"role_id"`
+	schemax.Schema[userRoleRow]
+	UserID columnx.Column[userRoleRow, int64]  `dbx:"user_id"`
+	RoleID columnx.Column[userRoleRow, string] `dbx:"role_id"`
 }
 
 type userRoleRepo struct {
@@ -26,7 +29,7 @@ type userRoleRepo struct {
 }
 
 func NewUserRoleRepository(db *dbx.DB) ports.UserRoleRepository {
-	urs := dbx.MustSchema("app_user_roles", userRoleSchema{})
+	urs := schemax.MustSchema("app_user_roles", userRoleSchema{})
 	return &userRoleRepo{
 		urs:          urs,
 		userRoleRepo: repository.New[userRoleRow](db, urs),
@@ -42,7 +45,7 @@ func (r *userRoleRepo) ListUserRoleIDs(ctx context.Context, userID int64) ([]str
 }
 
 func (r *userRoleRepo) SetUserRoleIDs(ctx context.Context, userID int64, roleIDs []string) error {
-	if _, err := r.userRoleRepo.Delete(ctx, dbx.DeleteFrom(r.urs).Where(r.urs.UserID.Eq(userID))); err != nil {
+	if _, err := r.userRoleRepo.Delete(ctx, querydsl.DeleteFrom(r.urs).Where(r.urs.UserID.Eq(userID))); err != nil {
 		return err
 	}
 	for _, roleID := range normalizeIDs(roleIDs) {
@@ -55,6 +58,6 @@ func (r *userRoleRepo) SetUserRoleIDs(ctx context.Context, userID int64, roleIDs
 }
 
 func (r *userRoleRepo) DeleteUserRoles(ctx context.Context, userID int64) error {
-	_, err := r.userRoleRepo.Delete(ctx, dbx.DeleteFrom(r.urs).Where(r.urs.UserID.Eq(userID)))
+	_, err := r.userRoleRepo.Delete(ctx, querydsl.DeleteFrom(r.urs).Where(r.urs.UserID.Eq(userID)))
 	return err
 }

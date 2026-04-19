@@ -7,7 +7,10 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/querydsl"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 	"github.com/samber/mo"
 )
@@ -21,12 +24,12 @@ type permissionRow struct {
 }
 
 type permissionSchema struct {
-	dbx.Schema[permissionRow]
-	ID        dbx.Column[permissionRow, string]    `dbx:"id,pk"`
-	Name      dbx.Column[permissionRow, string]    `dbx:"name"`
-	Code      dbx.Column[permissionRow, string]    `dbx:"code"`
-	GroupID   dbx.Column[permissionRow, *string]   `dbx:"group_id"`
-	CreatedAt dbx.Column[permissionRow, time.Time] `dbx:"created_at,codec=rfc3339_time"`
+	schemax.Schema[permissionRow]
+	ID        columnx.Column[permissionRow, string]    `dbx:"id,pk"`
+	Name      columnx.Column[permissionRow, string]    `dbx:"name"`
+	Code      columnx.Column[permissionRow, string]    `dbx:"code"`
+	GroupID   columnx.Column[permissionRow, *string]   `dbx:"group_id"`
+	CreatedAt columnx.Column[permissionRow, time.Time] `dbx:"created_at,codec=rfc3339_time"`
 }
 
 type permissionRepo struct {
@@ -35,7 +38,7 @@ type permissionRepo struct {
 }
 
 func NewPermissionRepository(db *dbx.DB) ports.PermissionRepository {
-	ps := dbx.MustSchema("app_permissions", permissionSchema{})
+	ps := schemax.MustSchema("app_permissions", permissionSchema{})
 	return &permissionRepo{
 		ps:       ps,
 		permRepo: repository.New[permissionRow](db, ps),
@@ -77,7 +80,7 @@ func (r *permissionRepo) CreatePermission(ctx context.Context, in ports.CreatePe
 }
 
 func (r *permissionRepo) UpdatePermission(ctx context.Context, id string, in ports.PatchPermissionInput) (mo.Option[ports.Permission], error) {
-	assignments := []dbx.Assignment{}
+	assignments := []querydsl.Assignment{}
 	if in.Name != nil {
 		assignments = append(assignments, r.ps.Name.Set(*in.Name))
 	}

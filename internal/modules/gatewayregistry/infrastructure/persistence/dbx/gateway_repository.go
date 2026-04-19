@@ -8,7 +8,10 @@ import (
 
 	"github.com/DaiYuANg/arcgo/collectionx"
 	"github.com/DaiYuANg/arcgo/dbx"
+	columnx "github.com/DaiYuANg/arcgo/dbx/column"
+	"github.com/DaiYuANg/arcgo/dbx/idgen"
 	"github.com/DaiYuANg/arcgo/dbx/repository"
+	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/gatewayregistry/ports"
 	"github.com/samber/mo"
 )
@@ -29,19 +32,19 @@ type gatewayRow struct {
 }
 
 type gatewaySchema struct {
-	dbx.Schema[gatewayRow]
-	ID            dbx.IDColumn[gatewayRow, int64, dbx.IDSnowflake] `dbx:"id,pk"`
-	NodeKey       dbx.Column[gatewayRow, string]                   `dbx:"node_key"`
-	NodeName      dbx.Column[gatewayRow, string]                   `dbx:"node_name"`
-	RuntimeType   dbx.Column[gatewayRow, string]                   `dbx:"runtime_type"`
-	AdvertiseAddr dbx.Column[gatewayRow, string]                   `dbx:"advertise_addr"`
-	SSHListenAddr dbx.Column[gatewayRow, string]                   `dbx:"ssh_listen_addr"`
-	ZoneName      dbx.Column[gatewayRow, string]                   `dbx:"zone_name"`
-	TagsCSV       dbx.Column[gatewayRow, *string]                  `dbx:"tags_csv"`
-	State         dbx.Column[gatewayRow, string]                   `dbx:"state"`
-	RegisteredAt  dbx.Column[gatewayRow, time.Time]                `dbx:"registered_at"`
-	LastSeenAt    dbx.Column[gatewayRow, time.Time]                `dbx:"last_seen_at"`
-	UpdatedAt     dbx.Column[gatewayRow, time.Time]                `dbx:"updated_at"`
+	schemax.Schema[gatewayRow]
+	ID            columnx.IDColumn[gatewayRow, int64, idgen.IDSnowflake] `dbx:"id,pk"`
+	NodeKey       columnx.Column[gatewayRow, string]                     `dbx:"node_key"`
+	NodeName      columnx.Column[gatewayRow, string]                     `dbx:"node_name"`
+	RuntimeType   columnx.Column[gatewayRow, string]                     `dbx:"runtime_type"`
+	AdvertiseAddr columnx.Column[gatewayRow, string]                     `dbx:"advertise_addr"`
+	SSHListenAddr columnx.Column[gatewayRow, string]                     `dbx:"ssh_listen_addr"`
+	ZoneName      columnx.Column[gatewayRow, string]                     `dbx:"zone_name"`
+	TagsCSV       columnx.Column[gatewayRow, *string]                    `dbx:"tags_csv"`
+	State         columnx.Column[gatewayRow, string]                     `dbx:"state"`
+	RegisteredAt  columnx.Column[gatewayRow, time.Time]                  `dbx:"registered_at"`
+	LastSeenAt    columnx.Column[gatewayRow, time.Time]                  `dbx:"last_seen_at"`
+	UpdatedAt     columnx.Column[gatewayRow, time.Time]                  `dbx:"updated_at"`
 }
 
 type gatewayRepo struct {
@@ -50,7 +53,7 @@ type gatewayRepo struct {
 }
 
 func NewGatewayRepository(db *dbx.DB) ports.GatewayRepository {
-	gs := dbx.MustSchema("gateway_registry_nodes", gatewaySchema{})
+	gs := schemax.MustSchema("gateway_registry_nodes", gatewaySchema{})
 	return &gatewayRepo{gs: gs, repo: repository.New[gatewayRow](db, gs)}
 }
 

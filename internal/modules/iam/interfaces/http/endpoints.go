@@ -17,13 +17,11 @@ import (
 )
 
 type UserEndpoint struct {
-	httpx.BaseEndpoint
 	userSvc      application.UserService
 	userRoleSvc  application.UserRoleService
 	principalSvc application.AuthPrincipalService
 }
 type RBACEndpoint struct {
-	httpx.BaseEndpoint
 	roleSvc  application.RoleService
 	groupSvc application.PermissionGroupService
 	permSvc  application.PermissionService
@@ -35,11 +33,21 @@ func NewUserEndpoint(userSvc application.UserService, userRoleSvc application.Us
 func NewRBACEndpoint(roleSvc application.RoleService, groupSvc application.PermissionGroupService, permSvc application.PermissionService) *RBACEndpoint {
 	return &RBACEndpoint{roleSvc: roleSvc, groupSvc: groupSvc, permSvc: permSvc}
 }
-func (e *UserEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	registerUserEndpoints(server.Group("/api"), e.userSvc, e.userRoleSvc, e.principalSvc)
+
+func (e *UserEndpoint) EndpointSpec() httpx.EndpointSpec {
+	return httpx.EndpointSpec{Prefix: "/api"}
 }
-func (e *RBACEndpoint) RegisterRoutes(server httpx.ServerRuntime) {
-	registerRBACEndpoints(server.Group("/api"), e.roleSvc, e.groupSvc, e.permSvc)
+
+func (e *UserEndpoint) Register(registrar httpx.Registrar) {
+	registerUserEndpoints(registrar.Scope(), e.userSvc, e.userRoleSvc, e.principalSvc)
+}
+
+func (e *RBACEndpoint) EndpointSpec() httpx.EndpointSpec {
+	return httpx.EndpointSpec{Prefix: "/api"}
+}
+
+func (e *RBACEndpoint) Register(registrar httpx.Registrar) {
+	registerRBACEndpoints(registrar.Scope(), e.roleSvc, e.groupSvc, e.permSvc)
 }
 
 func getUserDTOByID(ctx context.Context, userSvc application.UserService, userRoleSvc application.UserRoleService, id int64) (mo.Option[userDTO], error) {
