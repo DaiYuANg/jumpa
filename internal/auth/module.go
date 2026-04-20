@@ -102,40 +102,36 @@ var Module = dix.NewModule("auth",
 	dix.WithModuleImports(config2.Module, kv.Module, db2.Module),
 	dix.WithModuleProviders(
 		dix.Provider3(func(cfg config2.AppConfig, kvClient kvx.Client, db *dbx.DB) *authx.Engine {
-			tokens := authtoken.NewService(authtoken.Config{Secret: cfg.JWT.Secret, Issuer: cfg.JWT.Issuer})
 			engine := authx.NewEngine(
-				authx.WithAuthenticationManager(authx.AuthenticationManagerFunc(func(ctx context.Context, credential any) (authx.AuthenticationResult, error) {
-					token, ok := credential.(string)
-					if !ok || strings.TrimSpace(token) == "" {
-						return authx.AuthenticationResult{}, authx.ErrUnauthenticated
-					}
-					claims, err := tokens.Parse(ctx, token)
-					if err != nil || claims.Type != authtoken.TypeAccess {
-						return authx.AuthenticationResult{}, authx.ErrInvalidAuthenticationCredential
-					}
-					if cfg.Valkey.Enabled {
-						exists, exErr := kvClient.Exists(ctx, revokedKey(claims.ID))
-						if exErr == nil && exists {
+				authx.WithAuthenticationManager(authx.NewProviderManager(
+					authtoken.NewAuthenticationProvider(authtoken.Config{Secret: cfg.JWT.Secret, Issuer: cfg.JWT.Issuer}, func(ctx context.Context, claims *authtoken.Claims) (authx.AuthenticationResult, error) {
+						if claims == nil || claims.Type != authtoken.TypeAccess {
+							return authx.AuthenticationResult{}, authx.ErrInvalidAuthenticationCredential
+						}
+						if cfg.Valkey.Enabled {
+							exists, exErr := kvClient.Exists(ctx, revokedKey(claims.ID))
+							if exErr == nil && exists {
+								return authx.AuthenticationResult{}, authx.ErrUnauthenticated
+							}
+						}
+						pr, dbErr := principalFromDB(ctx, db, claims.Email)
+						if dbErr != nil {
 							return authx.AuthenticationResult{}, authx.ErrUnauthenticated
 						}
-					}
-					pr, dbErr := principalFromDB(ctx, db, claims.Email)
-					if dbErr != nil {
-						return authx.AuthenticationResult{}, authx.ErrUnauthenticated
-					}
-					if pr.IsAbsent() {
-						return authx.AuthenticationResult{}, authx.ErrUnauthenticated
-					}
-					principal := pr.MustGet()
-					attributes := map[string]any{
-						"email": claims.Email,
-					}
-					if !claims.ExpiresAt.IsZero() {
-						attributes["exp"] = claims.ExpiresAt.Format(time.RFC3339)
-					}
-					principal.Attributes = collectionx.NewMapFrom(attributes)
-					return authx.AuthenticationResult{Principal: principal}, nil
-				})),
+						if pr.IsAbsent() {
+							return authx.AuthenticationResult{}, authx.ErrUnauthenticated
+						}
+						principal := pr.MustGet()
+						attributes := map[string]any{
+							"email": claims.Email,
+						}
+						if !claims.ExpiresAt.IsZero() {
+							attributes["exp"] = claims.ExpiresAt.Format(time.RFC3339)
+						}
+						principal.Attributes = collectionx.NewMapFrom(attributes)
+						return authx.AuthenticationResult{Principal: principal}, nil
+					}),
+				)),
 				authx.WithAuthorizer(authx.AuthorizerFunc(func(_ context.Context, input authx.AuthorizationModel) (authx.Decision, error) {
 					pr, ok := input.Principal.(authx.Principal)
 					if !ok {

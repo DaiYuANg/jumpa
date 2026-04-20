@@ -27,6 +27,8 @@ type Service struct {
 	provider *authjwt.Provider
 }
 
+type ClaimsMapper func(ctx context.Context, claims *Claims) (authx.AuthenticationResult, error)
+
 type Claims struct {
 	Email     string
 	Type      string
@@ -54,6 +56,20 @@ func NewService(cfg Config) *Service {
 			}),
 		),
 	}
+}
+
+func NewAuthenticationProvider(cfg Config, mapper ClaimsMapper) authx.AuthenticationProvider {
+	service := NewService(cfg)
+	return authx.NewAuthenticationProviderFunc[authjwt.TokenCredential](func(ctx context.Context, credential authjwt.TokenCredential) (authx.AuthenticationResult, error) {
+		claims, err := service.Parse(ctx, credential.Token)
+		if err != nil {
+			return authx.AuthenticationResult{}, err
+		}
+		if mapper == nil {
+			return authx.AuthenticationResult{Principal: claims}, nil
+		}
+		return mapper(ctx, claims)
+	})
 }
 
 func (s *Service) Issue(email, tokenType string, ttl time.Duration) (string, error) {

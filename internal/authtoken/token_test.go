@@ -97,3 +97,26 @@ func TestServiceRejectsInconsistentTokenTypeClaims(t *testing.T) {
 		t.Fatal("expected inconsistent token type claims to be rejected")
 	}
 }
+
+func TestAuthenticationProviderUsesJWTTokenCredential(t *testing.T) {
+	cfg := Config{Secret: "test-secret", Issuer: "jumpa-test"}
+	service := NewService(cfg)
+	token, err := service.Issue("user@example.com", TypeAccess, time.Hour)
+	if err != nil {
+		t.Fatalf("issue token: %v", err)
+	}
+
+	provider := NewAuthenticationProvider(cfg, nil)
+	result, err := provider.AuthenticateAny(context.Background(), authjwt.NewTokenCredential(token))
+	if err != nil {
+		t.Fatalf("authenticate token credential: %v", err)
+	}
+
+	claims, ok := result.Principal.(*Claims)
+	if !ok {
+		t.Fatalf("principal type = %T, want *Claims", result.Principal)
+	}
+	if claims.Email != "user@example.com" || claims.Type != TypeAccess {
+		t.Fatalf("claims = %#v", claims)
+	}
+}

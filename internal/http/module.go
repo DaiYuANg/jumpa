@@ -7,6 +7,7 @@ import (
 
 	"github.com/DaiYuANg/arcgo/authx"
 	authhttp "github.com/DaiYuANg/arcgo/authx/http"
+	authjwt "github.com/DaiYuANg/arcgo/authx/jwt"
 	"github.com/DaiYuANg/arcgo/collectionx"
 	collectionset "github.com/DaiYuANg/arcgo/collectionx/set"
 	"github.com/DaiYuANg/arcgo/dix"
@@ -94,7 +95,7 @@ func buildAuthMiddleware(engine *authx.Engine, policy AuthzPolicyConfig) fiberap
 		if token == "" {
 			return c.Status(401).JSON(map[string]string{"message": "missing bearer token"})
 		}
-		check, err := engine.Check(c.UserContext(), token)
+		check, err := engine.Check(c.UserContext(), authjwt.NewTokenCredential(token))
 		if err != nil {
 			return c.Status(401).JSON(map[string]string{"message": authhttp.ErrorMessage(err)})
 		}
