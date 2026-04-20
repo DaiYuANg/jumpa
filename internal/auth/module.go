@@ -15,18 +15,12 @@ import (
 	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
 	"github.com/DaiYuANg/arcgo/dix"
 	"github.com/DaiYuANg/arcgo/kvx"
+	"github.com/DaiYuANg/jumpa/internal/authtoken"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
 	db2 "github.com/DaiYuANg/jumpa/internal/db"
 	"github.com/DaiYuANg/jumpa/internal/kv"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/samber/mo"
 )
-
-type jwtClaims struct {
-	Email string `json:"email"`
-	Type  string `json:"typ"`
-	jwt.RegisteredClaims
-}
 
 type authPrincipalRow struct {
 	ID    string `dbx:"id"`
@@ -60,20 +54,6 @@ type authPrincipalPermissionSchema struct {
 }
 
 func revokedKey(jti string) string { return "auth:revoked:" + jti }
-
-func parseAccessToken(secret, issuer, token string) (*jwtClaims, error) {
-	t, err := jwt.ParseWithClaims(token, &jwtClaims{}, func(_ *jwt.Token) (any, error) {
-		return []byte(secret), nil
-	}, jwt.WithIssuer(issuer))
-	if err != nil {
-		return nil, err
-	}
-	claims, ok := t.Claims.(*jwtClaims)
-	if !ok || !t.Valid || claims.Type != "access" {
-		return nil, authx.ErrInvalidAuthenticationCredential
-	}
-	return claims, nil
-}
 
 func principalFromDB(ctx context.Context, db *dbx.DB, email string) (mo.Option[authx.Principal], error) {
 	ps := schemax.MustSchema("app_auth_principals", authPrincipalSchema{})
@@ -122,14 +102,15 @@ var Module = dix.NewModule("auth",
 	dix.WithModuleImports(config2.Module, kv.Module, db2.Module),
 	dix.WithModuleProviders(
 		dix.Provider3(func(cfg config2.AppConfig, kvClient kvx.Client, db *dbx.DB) *authx.Engine {
+			tokens := authtoken.NewService(authtoken.Config{Secret: cfg.JWT.Secret, Issuer: cfg.JWT.Issuer})
 			engine := authx.NewEngine(
 				authx.WithAuthenticationManager(authx.AuthenticationManagerFunc(func(ctx context.Context, credential any) (authx.AuthenticationResult, error) {
 					token, ok := credential.(string)
 					if !ok || strings.TrimSpace(token) == "" {
 						return authx.AuthenticationResult{}, authx.ErrUnauthenticated
 					}
-					claims, err := parseAccessToken(cfg.JWT.Secret, cfg.JWT.Issuer, token)
-					if err != nil {
+					claims, err := tokens.Parse(ctx, token)
+					if err != nil || claims.Type != authtoken.TypeAccess {
 						return authx.AuthenticationResult{}, authx.ErrInvalidAuthenticationCredential
 					}
 					if cfg.Valkey.Enabled {
@@ -146,10 +127,13 @@ var Module = dix.NewModule("auth",
 						return authx.AuthenticationResult{}, authx.ErrUnauthenticated
 					}
 					principal := pr.MustGet()
-					principal.Attributes = collectionx.NewMapFrom(map[string]any{
+					attributes := map[string]any{
 						"email": claims.Email,
-						"exp":   claims.ExpiresAt.Time.Format(time.RFC3339),
-					})
+					}
+					if !claims.ExpiresAt.IsZero() {
+						attributes["exp"] = claims.ExpiresAt.Format(time.RFC3339)
+					}
+					principal.Attributes = collectionx.NewMapFrom(attributes)
 					return authx.AuthenticationResult{Principal: principal}, nil
 				})),
 				authx.WithAuthorizer(authx.AuthorizerFunc(func(_ context.Context, input authx.AuthorizationModel) (authx.Decision, error) {

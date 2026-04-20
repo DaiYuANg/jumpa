@@ -2,16 +2,13 @@ package endpoints
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/DaiYuANg/arcgo/httpx"
 	"github.com/DaiYuANg/arcgo/kvx"
+	"github.com/DaiYuANg/jumpa/internal/authtoken"
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthConfig struct {
@@ -23,49 +20,6 @@ type AuthConfig struct {
 	RevokedPrefix  string
 }
 
-type authClaims struct {
-	Email string `json:"email"`
-	Type  string `json:"typ"`
-	jwt.RegisteredClaims
-}
-
-func randomJTI() string {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
-}
-
-func issueToken(cfg AuthConfig, email, tokenType string, ttl time.Duration) (string, error) {
-	now := time.Now().UTC()
-	claims := authClaims{
-		Email: strings.ToLower(strings.TrimSpace(email)),
-		Type:  tokenType,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    cfg.Issuer,
-			Subject:   strings.ToLower(strings.TrimSpace(email)),
-			ID:        randomJTI(),
-			IssuedAt:  jwt.NewNumericDate(now),
-			NotBefore: jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
-		},
-	}
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.Secret))
-}
-
-func parseToken(cfg AuthConfig, token string) (*authClaims, error) {
-	t, err := jwt.ParseWithClaims(token, &authClaims{}, func(_ *jwt.Token) (any, error) {
-		return []byte(cfg.Secret), nil
-	}, jwt.WithIssuer(cfg.Issuer))
-	if err != nil {
-		return nil, err
-	}
-	claims, ok := t.Claims.(*authClaims)
-	if !ok || !t.Valid {
-		return nil, fmt.Errorf("invalid token")
-	}
-	return claims, nil
-}
-
 func revokedKey(cfg AuthConfig, jti string) string {
 	prefix := cfg.RevokedPrefix
 	if strings.TrimSpace(prefix) == "" {
@@ -74,7 +28,7 @@ func revokedKey(cfg AuthConfig, jti string) string {
 	return prefix + ":" + jti
 }
 
-func isRevoked(ctx context.Context, cfg AuthConfig, client kvx.Client, claims *authClaims) bool {
+func isRevoked(ctx context.Context, cfg AuthConfig, client kvx.Client, claims *authtoken.Claims) bool {
 	if !cfg.UseValkey || claims == nil || claims.ID == "" {
 		return false
 	}
@@ -82,11 +36,11 @@ func isRevoked(ctx context.Context, cfg AuthConfig, client kvx.Client, claims *a
 	return err == nil && exists
 }
 
-func revokeToken(ctx context.Context, cfg AuthConfig, client kvx.Client, claims *authClaims) {
-	if !cfg.UseValkey || claims == nil || claims.ID == "" || claims.ExpiresAt == nil {
+func revokeToken(ctx context.Context, cfg AuthConfig, client kvx.Client, claims *authtoken.Claims) {
+	if !cfg.UseValkey || claims == nil || claims.ID == "" || claims.ExpiresAt.IsZero() {
 		return
 	}
-	ttl := time.Until(claims.ExpiresAt.Time)
+	ttl := time.Until(claims.ExpiresAt)
 	if ttl <= 0 {
 		return
 	}
@@ -134,6 +88,8 @@ func toMeByEmail(email string) meResponse {
 }
 
 func registerAuthEndpoints(api *httpx.Group, cfg AuthConfig, kvClient kvx.Client) {
+	tokens := authtoken.NewService(authtoken.Config{Secret: cfg.Secret, Issuer: cfg.Issuer})
+
 	httpx.MustGroupPost(api, "/auth/login", func(ctx context.Context, input *LoginInput) (*dynamicOutput, error) {
 		if strings.TrimSpace(input.Body.Password) == "" {
 			return nil, httpx.NewError(401, "invalid credentials")
@@ -146,11 +102,11 @@ func registerAuthEndpoints(api *httpx.Group, cfg AuthConfig, kvClient kvx.Client
 		if refreshTTL <= 0 {
 			refreshTTL = 7 * 24 * time.Hour
 		}
-		access, err := issueToken(cfg, input.Body.Email, "access", accessTTL)
+		access, err := tokens.Issue(input.Body.Email, authtoken.TypeAccess, accessTTL)
 		if err != nil {
 			return nil, httpx.NewError(500, "failed to issue access token")
 		}
-		refresh, err := issueToken(cfg, input.Body.Email, "refresh", refreshTTL)
+		refresh, err := tokens.Issue(input.Body.Email, authtoken.TypeRefresh, refreshTTL)
 		if err != nil {
 			return nil, httpx.NewError(500, "failed to issue refresh token")
 		}
@@ -165,8 +121,8 @@ func registerAuthEndpoints(api *httpx.Group, cfg AuthConfig, kvClient kvx.Client
 		if rt == "" {
 			return nil, httpx.NewError(401, "missing refresh token")
 		}
-		claims, err := parseToken(cfg, rt)
-		if err != nil || claims.Type != "refresh" {
+		claims, err := tokens.Parse(ctx, rt)
+		if err != nil || claims.Type != authtoken.TypeRefresh {
 			return nil, httpx.NewError(401, "invalid refresh token")
 		}
 		if isRevoked(ctx, cfg, kvClient, claims) {
@@ -180,11 +136,11 @@ func registerAuthEndpoints(api *httpx.Group, cfg AuthConfig, kvClient kvx.Client
 		if refreshTTL <= 0 {
 			refreshTTL = 7 * 24 * time.Hour
 		}
-		access, err := issueToken(cfg, claims.Email, "access", accessTTL)
+		access, err := tokens.Issue(claims.Email, authtoken.TypeAccess, accessTTL)
 		if err != nil {
 			return nil, httpx.NewError(500, "failed to issue access token")
 		}
-		refresh, err := issueToken(cfg, claims.Email, "refresh", refreshTTL)
+		refresh, err := tokens.Issue(claims.Email, authtoken.TypeRefresh, refreshTTL)
 		if err != nil {
 			return nil, httpx.NewError(500, "failed to issue refresh token")
 		}
@@ -195,7 +151,7 @@ func registerAuthEndpoints(api *httpx.Group, cfg AuthConfig, kvClient kvx.Client
 
 	httpx.MustGroupPost(api, "/auth/logout", func(ctx context.Context, input *LogoutInput) (*dynamicOutput, error) {
 		if token := parseBearerToken(ctx); token != "" {
-			if claims, err := parseToken(cfg, token); err == nil && claims.Type == "access" {
+			if claims, err := tokens.Parse(ctx, token); err == nil && claims.Type == authtoken.TypeAccess {
 				revokeToken(ctx, cfg, kvClient, claims)
 			}
 		}
@@ -204,7 +160,7 @@ func registerAuthEndpoints(api *httpx.Group, cfg AuthConfig, kvClient kvx.Client
 			rt = parseRefreshCookie(ctx)
 		}
 		if rt != "" {
-			if claims, err := parseToken(cfg, rt); err == nil && claims.Type == "refresh" {
+			if claims, err := tokens.Parse(ctx, rt); err == nil && claims.Type == authtoken.TypeRefresh {
 				revokeToken(ctx, cfg, kvClient, claims)
 			}
 		}
@@ -214,8 +170,8 @@ func registerAuthEndpoints(api *httpx.Group, cfg AuthConfig, kvClient kvx.Client
 	httpx.MustGroupGet(api, "/me", func(ctx context.Context, _ *struct{}) (*dynamicOutput, error) {
 		token := parseBearerToken(ctx)
 		if token != "" {
-			claims, err := parseToken(cfg, token)
-			if err == nil && claims.Type == "access" {
+			claims, err := tokens.Parse(ctx, token)
+			if err == nil && claims.Type == authtoken.TypeAccess {
 				if isRevoked(ctx, cfg, kvClient, claims) {
 					return nil, httpx.NewError(401, "access token revoked")
 				}

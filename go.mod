@@ -15,10 +15,12 @@ require (
 	charm.land/bubbletea/v2 v2.0.6
 	charm.land/lipgloss/v2 v2.0.3
 	github.com/DaiYuANg/arcgo/authx v0.2.6
+	github.com/DaiYuANg/arcgo/authx/jwt v0.0.2
 	github.com/DaiYuANg/arcgo/clientx v0.3.2
 	github.com/DaiYuANg/arcgo/collectionx v0.1.6
 	github.com/DaiYuANg/arcgo/configx v0.3.2
 	github.com/DaiYuANg/arcgo/dbx v0.3.1
+	github.com/DaiYuANg/arcgo/dbx/idgen v0.0.1
 	github.com/DaiYuANg/arcgo/dbx/migrate v0.1.4
 	github.com/DaiYuANg/arcgo/dix v0.6.0
 	github.com/DaiYuANg/arcgo/eventx v0.3.2
@@ -70,7 +72,6 @@ require (
 	github.com/Antonboom/nilnil v1.1.1 // indirect
 	github.com/Antonboom/testifylint v1.6.4 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/DaiYuANg/arcgo/dbx/idgen v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/echo v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/gin v0.0.1 // indirect
 	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.1.5 // indirect
