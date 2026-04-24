@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newConnectCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
+func newConnectCmd(log *slog.Logger) *cobra.Command {
 	connectFlags := struct {
 		LocalForwards   []string
 		RemoteForwards  []string
@@ -62,7 +62,7 @@ func newConnectCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			return runSubApp(cmd.Context(), log, flags.overrides(cmd), "jumpa-cli-connect", cli.NewConnectModule(cli.ConnectOptions{
+			return runSubApp(cmd.Context(), log, cmd, "jumpa-cli-connect", cli.NewConnectModule(cli.ConnectOptions{
 				Host:            args[0],
 				Account:         account,
 				LocalForwards:   localForwards,

@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newRequestsCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
+func newRequestsCmd(log *slog.Logger) *cobra.Command {
 	options := cli.ListOptions{
 		Page:     1,
 		PageSize: 50,
@@ -32,7 +32,7 @@ func newRequestsCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
 		Args:    cobra.NoArgs,
 		PreRunE: func(_ *cobra.Command, _ []string) error { return validateRequestListOptions(&options) },
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runSubApp(cmd.Context(), log, flags.overrides(cmd), "jumpa-cli-requests", cli.NewRequestsModule(options))
+			return runSubApp(cmd.Context(), log, cmd, "jumpa-cli-requests", cli.NewRequestsModule(options))
 		},
 	}
 
@@ -44,13 +44,13 @@ func newRequestsCmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
 		panic(err)
 	}
 	cmd.AddCommand(
-		newRequestReviewCmd(log, flags, false),
-		newRequestReviewCmd(log, flags, true),
+		newRequestReviewCmd(log, false),
+		newRequestReviewCmd(log, true),
 	)
 	return cmd
 }
 
-func newRequestReviewCmd(log *slog.Logger, flags *rootFlags, reject bool) *cobra.Command {
+func newRequestReviewCmd(log *slog.Logger, reject bool) *cobra.Command {
 	options := cli.AccessRequestReviewOptions{Reject: reject}
 	use := "approve <request-id>"
 	short := "Approve an access request"
@@ -88,7 +88,7 @@ func newRequestReviewCmd(log *slog.Logger, flags *rootFlags, reject bool) *cobra
 		ValidArgsFunction: cobra.NoFileCompletions,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			options.ID = args[0]
-			return runSubApp(cmd.Context(), log, flags.overrides(cmd), appName, cli.NewAccessRequestReviewModule(options))
+			return runSubApp(cmd.Context(), log, cmd, appName, cli.NewAccessRequestReviewModule(options))
 		},
 	}
 

@@ -5,9 +5,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/arcgolabs/dix"
 	cli "github.com/DaiYuANg/jumpa/internal/cli"
-	"github.com/samber/mo"
+	"github.com/arcgolabs/dix"
 	"github.com/spf13/cobra"
 )
 
@@ -19,23 +18,7 @@ const (
 
 var accessRequestStatusValues = []string{"pending", "approved", "rejected"}
 
-type rootFlags struct {
-	APIURL                  string
-	GatewayAddr             string
-	Email                   string
-	Password                string
-	Principal               string
-	SSHConfigPath           string
-	SSHPrivateKeyPath       string
-	SSHPrivateKeyPassphrase string
-	SSHAgentEnabled         bool
-	SSHAgentSocket          string
-	AltScreen               bool
-}
-
 func newRootCommand(log *slog.Logger) *cobra.Command {
-	flags := &rootFlags{}
-
 	root := &cobra.Command{
 		Use:   "jumpa",
 		Short: "Operate the Jumpa control plane from a terminal",
@@ -58,7 +41,7 @@ func newRootCommand(log *slog.Logger) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runSubApp(cmd.Context(), log, flags.overrides(cmd), "jumpa-cli-ui", cli.NewUIModule())
+			return runSubApp(cmd.Context(), log, cmd, "jumpa-cli-ui", cli.NewUIModule())
 		},
 	}
 
@@ -68,62 +51,36 @@ func newRootCommand(log *slog.Logger) *cobra.Command {
 		&cobra.Group{ID: reviewCommandGroup, Title: "Review Commands"},
 	)
 
-	bindRootFlags(root, flags)
+	bindRootFlags(root)
 	root.AddCommand(
-		newUICmd(log, flags),
-		newHostsCmd(log, flags),
-		newSessionsCmd(log, flags),
-		newRequestsCmd(log, flags),
-		newGatewaysCmd(log, flags),
-		newConnectCmd(log, flags),
+		newUICmd(log),
+		newHostsCmd(log),
+		newSessionsCmd(log),
+		newRequestsCmd(log),
+		newGatewaysCmd(log),
+		newConnectCmd(log),
 	)
 
 	return root
 }
 
-func bindRootFlags(cmd *cobra.Command, flags *rootFlags) {
-	cmd.PersistentFlags().StringVar(&flags.APIURL, "api", "", "jumpa API base URL")
-	cmd.PersistentFlags().StringVar(&flags.GatewayAddr, "gateway", "", "override SSH gateway host:port")
-	cmd.PersistentFlags().StringVar(&flags.Email, "email", "", "login email for control-plane authentication")
-	cmd.PersistentFlags().StringVar(&flags.Password, "password", "", "login password for control-plane authentication")
-	cmd.PersistentFlags().StringVar(&flags.Principal, "principal", "", "SSH principal used when launching gateway sessions")
-	cmd.PersistentFlags().StringVar(&flags.SSHConfigPath, "ssh-config", "", "override the ssh config file used for gateway connection defaults")
-	cmd.PersistentFlags().StringVar(&flags.SSHPrivateKeyPath, "ssh-key", "", "private key path used for SSH authentication")
-	cmd.PersistentFlags().StringVar(&flags.SSHPrivateKeyPassphrase, "ssh-key-passphrase", "", "private key passphrase used for SSH authentication")
-	cmd.PersistentFlags().BoolVar(&flags.SSHAgentEnabled, "ssh-agent", false, "enable SSH agent authentication using SSH_AUTH_SOCK or --ssh-agent-sock")
-	cmd.PersistentFlags().StringVar(&flags.SSHAgentSocket, "ssh-agent-sock", "", "override the SSH agent socket path")
-	cmd.PersistentFlags().BoolVar(&flags.AltScreen, "alt-screen", true, "run the Bubble Tea UI in the terminal alternate screen")
+func bindRootFlags(cmd *cobra.Command) {
+	flags := cmd.PersistentFlags()
+	flags.String("api", "", "jumpa API base URL")
+	flags.String("gateway", "", "override SSH gateway host:port")
+	flags.String("email", "", "login email for control-plane authentication")
+	flags.String("password", "", "login password for control-plane authentication")
+	flags.String("principal", "", "SSH principal used when launching gateway sessions")
+	flags.String("ssh-config", "", "override the ssh config file used for gateway connection defaults")
+	flags.String("ssh-key", "", "private key path used for SSH authentication")
+	flags.String("ssh-key-passphrase", "", "private key passphrase used for SSH authentication")
+	flags.Bool("ssh-agent", false, "enable SSH agent authentication using SSH_AUTH_SOCK or --ssh-agent-sock")
+	flags.String("ssh-agent-sock", "", "override the SSH agent socket path")
+	flags.Bool("alt-screen", true, "run the Bubble Tea UI in the terminal alternate screen")
 }
 
-func (f *rootFlags) overrides(cmd *cobra.Command) cli.Overrides {
-	if f == nil || cmd == nil {
-		return cli.Overrides{}
-	}
-	return cli.Overrides{
-		APIURL:                  cli.StringOverride(f.APIURL),
-		GatewayAddr:             cli.StringOverride(f.GatewayAddr),
-		Email:                   cli.StringOverride(f.Email),
-		Password:                cli.StringOverride(f.Password),
-		Principal:               cli.StringOverride(f.Principal),
-		SSHConfigPath:           cli.StringOverride(f.SSHConfigPath),
-		SSHPrivateKeyPath:       cli.StringOverride(f.SSHPrivateKeyPath),
-		SSHPrivateKeyPassphrase: cli.StringOverride(f.SSHPrivateKeyPassphrase),
-		SSHAgentEnabled:         boolOverride(cmd, "ssh-agent", f.SSHAgentEnabled),
-		SSHAgentSocket:          cli.StringOverride(f.SSHAgentSocket),
-		AltScreen:               boolOverride(cmd, "alt-screen", f.AltScreen),
-	}
-}
-
-func boolOverride(cmd *cobra.Command, name string, value bool) mo.Option[bool] {
-	flag := cmd.Flags().Lookup(name)
-	if flag == nil || !flag.Changed {
-		return mo.None[bool]()
-	}
-	return mo.Some(value)
-}
-
-func runSubApp(ctx context.Context, log *slog.Logger, overrides cli.Overrides, name string, commandModule dix.Module) error {
-	cfg, err := cli.ResolveConfig(overrides)
+func runSubApp(ctx context.Context, log *slog.Logger, cmd *cobra.Command, name string, commandModule dix.Module) error {
+	cfg, err := cli.LoadAndValidateConfig(cmd.Root().PersistentFlags())
 	if err != nil {
 		return err
 	}

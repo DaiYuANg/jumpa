@@ -24,7 +24,6 @@ require (
 	github.com/arcgolabs/dbx v0.1.1
 	github.com/arcgolabs/dbx/migrate v0.1.0
 	github.com/arcgolabs/dix v0.6.0
-	github.com/arcgolabs/dix/advanced v0.6.0
 	github.com/arcgolabs/eventx v0.1.0
 	github.com/arcgolabs/httpx v0.1.1
 	github.com/arcgolabs/httpx/adapter/fiber v0.1.1
@@ -42,6 +41,7 @@ require (
 	github.com/samber/lo v1.53.0
 	github.com/samber/mo v1.16.0
 	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.10
 	golang.org/x/crypto v0.50.0
 	golang.org/x/sys v0.43.0
 	golang.org/x/term v0.42.0
@@ -356,7 +356,6 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spf13/viper v1.12.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect

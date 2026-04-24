@@ -5,10 +5,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/arcgolabs/configx"
 	cliapp "github.com/DaiYuANg/jumpa/internal/cli/app"
 	"github.com/DaiYuANg/jumpa/internal/sshclient"
+	"github.com/arcgolabs/configx"
 	"github.com/samber/mo"
+	"github.com/spf13/pflag"
 )
 
 type Config struct {
@@ -27,20 +28,6 @@ type Config struct {
 	AltScreen               bool   `koanf:"alt_screen"`
 }
 
-type Overrides struct {
-	APIURL                  mo.Option[string]
-	GatewayAddr             mo.Option[string]
-	Email                   mo.Option[string]
-	Password                mo.Option[string]
-	Principal               mo.Option[string]
-	SSHConfigPath           mo.Option[string]
-	SSHPrivateKeyPath       mo.Option[string]
-	SSHPrivateKeyPassphrase mo.Option[string]
-	SSHAgentEnabled         mo.Option[bool]
-	SSHAgentSocket          mo.Option[string]
-	AltScreen               mo.Option[bool]
-}
-
 func DefaultConfig() Config {
 	return Config{
 		APIURL:           "http://127.0.0.1:8080",
@@ -49,28 +36,61 @@ func DefaultConfig() Config {
 	}
 }
 
-func LoadConfig() (Config, error) {
-	result := configx.NewT[Config](
+func LoadConfig(flagSet *pflag.FlagSet) (Config, error) {
+	options := []configx.Option{
 		configx.WithTypedDefaults(DefaultConfig()),
 		configx.WithDotenv(".env"),
 		configx.WithEnvPrefix("APP_CLI_"),
-	).Load()
+	}
+	if flagSet != nil {
+		options = append(options,
+			configx.WithFlagSet(flagSet),
+			configx.WithArgsNameFunc(cliConfigPathForFlag),
+		)
+	}
 
+	result := configx.NewT[Config](options...).Load()
 	return result.Get()
 }
 
-func ResolveConfig(overrides Overrides) (Config, error) {
-	cfg, err := LoadConfig()
+func LoadAndValidateConfig(flagSet *pflag.FlagSet) (Config, error) {
+	cfg, err := LoadConfig(flagSet)
 	if err != nil {
 		return Config{}, fmt.Errorf("load cli config: %w", err)
 	}
-
-	cfg = ApplyOverrides(cfg, overrides)
 	if err := ValidateConfig(&cfg); err != nil {
 		return Config{}, err
 	}
-
 	return cfg, nil
+}
+
+func cliConfigPathForFlag(name string) string {
+	switch strings.TrimSpace(name) {
+	case "api":
+		return "api_url"
+	case "gateway":
+		return "gateway_addr"
+	case "email":
+		return "email"
+	case "password":
+		return "password"
+	case "principal":
+		return "principal"
+	case "ssh-config":
+		return "ssh_config_path"
+	case "ssh-key":
+		return "ssh_private_key_path"
+	case "ssh-key-passphrase":
+		return "ssh_private_key_passphrase"
+	case "ssh-agent":
+		return "ssh_agent_enabled"
+	case "ssh-agent-sock":
+		return "ssh_agent_socket"
+	case "alt-screen":
+		return "alt_screen"
+	default:
+		return strings.ReplaceAll(strings.ToLower(strings.TrimSpace(name)), "-", "_")
+	}
 }
 
 func ValidateConfig(cfg *Config) error {
@@ -130,43 +150,6 @@ func ValidateConfig(cfg *Config) error {
 	}
 	cfg.GatewayAddr = normalized
 	return nil
-}
-
-func ApplyOverrides(cfg Config, overrides Overrides) Config {
-	overrides.APIURL.ForEach(func(value string) {
-		cfg.APIURL = value
-	})
-	overrides.GatewayAddr.ForEach(func(value string) {
-		cfg.GatewayAddr = value
-	})
-	overrides.Email.ForEach(func(value string) {
-		cfg.Email = value
-	})
-	overrides.Password.ForEach(func(value string) {
-		cfg.Password = value
-	})
-	overrides.Principal.ForEach(func(value string) {
-		cfg.Principal = value
-	})
-	overrides.SSHConfigPath.ForEach(func(value string) {
-		cfg.SSHConfigPath = value
-	})
-	overrides.SSHPrivateKeyPath.ForEach(func(value string) {
-		cfg.SSHPrivateKeyPath = value
-	})
-	overrides.SSHPrivateKeyPassphrase.ForEach(func(value string) {
-		cfg.SSHPrivateKeyPassphrase = value
-	})
-	overrides.SSHAgentEnabled.ForEach(func(value bool) {
-		cfg.SSHAgentEnabled = value
-	})
-	overrides.SSHAgentSocket.ForEach(func(value string) {
-		cfg.SSHAgentSocket = value
-	})
-	overrides.AltScreen.ForEach(func(value bool) {
-		cfg.AltScreen = value
-	})
-	return cfg
 }
 
 func StringOverride(value string) mo.Option[string] {

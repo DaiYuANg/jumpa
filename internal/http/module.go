@@ -5,6 +5,10 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/DaiYuANg/jumpa/internal/api"
+	auth2 "github.com/DaiYuANg/jumpa/internal/auth"
+	config2 "github.com/DaiYuANg/jumpa/internal/config"
+	"github.com/DaiYuANg/jumpa/pkg"
 	"github.com/arcgolabs/authx"
 	authhttp "github.com/arcgolabs/authx/http"
 	authjwt "github.com/arcgolabs/authx/jwt"
@@ -14,11 +18,6 @@ import (
 	"github.com/arcgolabs/httpx"
 	"github.com/arcgolabs/httpx/adapter"
 	"github.com/arcgolabs/httpx/adapter/fiber"
-	"github.com/DaiYuANg/jumpa/internal/api"
-	auth2 "github.com/DaiYuANg/jumpa/internal/auth"
-	config2 "github.com/DaiYuANg/jumpa/internal/config"
-	"github.com/DaiYuANg/jumpa/internal/httpendpoint"
-	"github.com/DaiYuANg/jumpa/pkg"
 	"github.com/go-playground/validator/v10"
 	fiberapp "github.com/gofiber/fiber/v2"
 	fiberlogger "github.com/gofiber/fiber/v2/middleware/logger"
@@ -71,12 +70,31 @@ func newFiberApp() *fiberapp.App {
 	return fiberapp.New()
 }
 
-func setupFiberMiddleware(app *fiberapp.App, engine *authx.Engine, policy AuthzPolicyConfig) {
+func setupFiberMiddleware(app *fiberapp.App, guard *authhttp.Guard, policy AuthzPolicyConfig) {
 	app.Use(fiberlogger.New(), fiberrecover.New(), fiberrequestid.New())
-	app.Use(buildAuthMiddleware(engine, policy))
+	app.Use(buildAuthMiddleware(guard, policy))
 }
 
-func buildAuthMiddleware(engine *authx.Engine, policy AuthzPolicyConfig) fiberapp.Handler {
+func newAuthGuard(engine *authx.Engine, policy AuthzPolicyConfig) *authhttp.Guard {
+	return authhttp.NewGuard(
+		engine,
+		authhttp.WithCredentialResolverFunc(resolveAuthCredential),
+		authhttp.WithAuthorizationResolverFunc(func(_ context.Context, req authhttp.RequestInfo, principal any) (authx.AuthorizationModel, error) {
+			return authx.AuthorizationModel{
+				Principal: principal,
+				Resource:  protectedResource(req.Path, policy.ProtectedPrefix),
+				Action:    resolveAuthAction(req.Method, policy.MethodActionMapping),
+				Context: collectionx.NewMapFrom(map[string]any{
+					"path":          req.Path,
+					"method":        req.Method,
+					"route_pattern": req.RoutePattern,
+				}),
+			}, nil
+		}),
+	)
+}
+
+func buildAuthMiddleware(guard *authhttp.Guard, policy AuthzPolicyConfig) fiberapp.Handler {
 	publicPathSet := collectionset.NewSet(policy.PublicPaths...)
 	authOnlySet := collectionset.NewSet(policy.AuthOnlyResources...)
 	return func(c *fiberapp.Ctx) error {
@@ -87,51 +105,89 @@ func buildAuthMiddleware(engine *authx.Engine, policy AuthzPolicyConfig) fiberap
 		if publicPathSet.Contains(path) {
 			return c.Next()
 		}
-		token := ""
-		authz := strings.TrimSpace(c.Get("Authorization"))
-		if strings.HasPrefix(strings.ToLower(authz), "bearer ") {
-			token = strings.TrimSpace(authz[7:])
-		}
-		if token == "" {
-			return c.Status(401).JSON(map[string]string{"message": "missing bearer token"})
-		}
-		check, err := engine.Check(c.UserContext(), authjwt.NewTokenCredential(token))
-		if err != nil {
-			return c.Status(401).JSON(map[string]string{"message": authhttp.ErrorMessage(err)})
-		}
-		resource := strings.TrimPrefix(path, policy.ProtectedPrefix+"/")
-		if idx := strings.IndexByte(resource, '/'); idx >= 0 {
-			resource = resource[:idx]
-		}
+
+		req := authRequestInfo(c)
+		resource := protectedResource(path, policy.ProtectedPrefix)
 		if authOnlySet.Contains(resource) {
-			c.SetUserContext(authx.WithPrincipal(c.UserContext(), check.Principal))
+			result, err := guard.Check(c.UserContext(), req)
+			if err != nil {
+				return c.Status(authhttp.StatusCodeFromError(err)).JSON(map[string]string{"message": authhttp.ErrorMessage(err)})
+			}
+			c.SetUserContext(authx.WithPrincipal(c.UserContext(), result.Principal))
 			return c.Next()
 		}
-		action, ok := policy.MethodActionMapping[c.Method()]
-		if !ok {
-			action = "read"
-		}
-		decision, canErr := engine.Can(c.UserContext(), authx.AuthorizationModel{
-			Principal: check.Principal,
-			Resource:  resource,
-			Action:    action,
-			Context: collectionx.NewMapFrom(map[string]any{
-				"path":   path,
-				"method": c.Method(),
-			}),
-		})
-		if canErr != nil {
-			return c.Status(500).JSON(map[string]string{"message": authhttp.ErrorMessage(canErr)})
+
+		result, decision, err := guard.Require(c.UserContext(), req)
+		if err != nil {
+			return c.Status(authhttp.StatusCodeFromError(err)).JSON(map[string]string{"message": authhttp.ErrorMessage(err)})
 		}
 		if !decision.Allowed {
 			return c.Status(403).JSON(map[string]string{"message": authhttp.DeniedMessage(decision)})
 		}
-		c.SetUserContext(authx.WithPrincipal(c.UserContext(), check.Principal))
+		c.SetUserContext(authx.WithPrincipal(c.UserContext(), result.Principal))
 		return c.Next()
 	}
 }
 
-func buildHTTPServer(app *fiberapp.App, endpoints []httpx.Endpoint, log *slog.Logger) httpx.ServerRuntime {
+func resolveAuthCredential(_ context.Context, req authhttp.RequestInfo) (any, error) {
+	token, ok := parseBearerToken(req.Header("Authorization"))
+	if !ok {
+		return nil, authx.ErrInvalidAuthenticationCredential
+	}
+	return authjwt.NewTokenCredential(token), nil
+}
+
+func resolveAuthAction(method string, methodActionMapping map[string]string) string {
+	if action, ok := methodActionMapping[method]; ok {
+		return action
+	}
+	return "read"
+}
+
+func parseBearerToken(raw string) (string, bool) {
+	value := strings.TrimSpace(raw)
+	if !strings.HasPrefix(strings.ToLower(value), "bearer ") {
+		return "", false
+	}
+	token := strings.TrimSpace(value[7:])
+	return token, token != ""
+}
+
+func protectedResource(path, prefix string) string {
+	if path == prefix {
+		return ""
+	}
+	resource := strings.TrimPrefix(path, prefix+"/")
+	if idx := strings.IndexByte(resource, '/'); idx >= 0 {
+		resource = resource[:idx]
+	}
+	return resource
+}
+
+func authRequestInfo(c *fiberapp.Ctx) authhttp.RequestInfo {
+	routePattern := c.Path()
+	var pathParams map[string]string
+	if route := c.Route(); route != nil {
+		if pattern := strings.TrimSpace(route.Path); pattern != "" {
+			routePattern = pattern
+		}
+		if len(route.Params) > 0 {
+			pathParams = make(map[string]string, len(route.Params))
+			for _, param := range route.Params {
+				pathParams[param] = c.Params(param)
+			}
+		}
+	}
+	return authhttp.RequestInfo{
+		Method:       c.Method(),
+		Path:         c.Path(),
+		RoutePattern: routePattern,
+		PathParams:   pathParams,
+		Native:       c,
+	}
+}
+
+func buildHTTPServer(app *fiberapp.App, endpoints collectionx.List[httpx.Endpoint], log *slog.Logger) httpx.ServerRuntime {
 	ad := fiber.New(app, adapter.HumaOptions{
 		Title:       "ArcGo Backend API",
 		Version:     "1.0.0",
@@ -146,20 +202,23 @@ func buildHTTPServer(app *fiberapp.App, endpoints []httpx.Endpoint, log *slog.Lo
 		httpx.WithValidator(validator.New(validator.WithRequiredStructEnabled())),
 		httpx.WithValidation(),
 	)
-	for _, endpoint := range endpoints {
+	endpoints.Range(func(_ int, endpoint httpx.Endpoint) bool {
 		server.RegisterOnly(endpoint)
-	}
+		return true
+	})
 	return server
 }
 
 var Module = dix.NewModule("http",
 	dix.WithModuleImports(config2.Module, api.Module, auth2.Module),
 	dix.WithModuleProviders(
-		httpendpoint.SliceProvider(),
 		dix.Provider1(func(cfg config2.AppConfig) AuthzPolicyConfig { return authzPolicyFromConfig(cfg) }),
-		dix.Provider4(func(endpoints []httpx.Endpoint, log *slog.Logger, engine *authx.Engine, policy AuthzPolicyConfig) httpx.ServerRuntime {
+		dix.Provider2(func(engine *authx.Engine, policy AuthzPolicyConfig) *authhttp.Guard {
+			return newAuthGuard(engine, policy)
+		}),
+		dix.Provider4(func(endpoints collectionx.List[httpx.Endpoint], log *slog.Logger, guard *authhttp.Guard, policy AuthzPolicyConfig) httpx.ServerRuntime {
 			app := newFiberApp()
-			setupFiberMiddleware(app, engine, policy)
+			setupFiberMiddleware(app, guard, policy)
 			return buildHTTPServer(app, endpoints, log)
 		}),
 	),

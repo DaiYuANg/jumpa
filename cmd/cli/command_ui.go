@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newUICmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
+func newUICmd(log *slog.Logger) *cobra.Command {
 	return &cobra.Command{
 		GroupID: workflowCommandGroup,
 		Use:     "ui",
@@ -23,7 +23,7 @@ func newUICmd(log *slog.Logger, flags *rootFlags) *cobra.Command {
 		),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runSubApp(cmd.Context(), log, flags.overrides(cmd), "jumpa-cli-ui", cli.NewUIModule())
+			return runSubApp(cmd.Context(), log, cmd, "jumpa-cli-ui", cli.NewUIModule())
 		},
 	}
 }

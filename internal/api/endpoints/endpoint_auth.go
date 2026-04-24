@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DaiYuANg/jumpa/internal/authtoken"
+	"github.com/arcgolabs/authx"
 	"github.com/arcgolabs/httpx"
 	"github.com/arcgolabs/kvx"
-	"github.com/DaiYuANg/jumpa/internal/authtoken"
-	"github.com/danielgtaylor/huma/v2"
 )
 
 type AuthConfig struct {
@@ -87,102 +87,138 @@ func toMeByEmail(email string) meResponse {
 	}
 }
 
-func registerAuthEndpoints(api *httpx.Group, cfg AuthConfig, kvClient kvx.Client) {
-	tokens := authtoken.NewService(authtoken.Config{Secret: cfg.Secret, Issuer: cfg.Issuer})
+func (e *AuthEndpoint) tokenService() *authtoken.Service {
+	return authtoken.NewService(authtoken.Config{Secret: e.cfg.Secret, Issuer: e.cfg.Issuer})
+}
 
-	httpx.MustGroupPost(api, "/auth/login", func(ctx context.Context, input *LoginInput) (*dynamicOutput, error) {
-		if strings.TrimSpace(input.Body.Password) == "" {
-			return nil, httpx.NewError(401, "invalid credentials")
-		}
-		accessTTL := time.Duration(cfg.AccessTTLMin) * time.Minute
-		refreshTTL := time.Duration(cfg.RefreshTTLHour) * time.Hour
-		if accessTTL <= 0 {
-			accessTTL = 30 * time.Minute
-		}
-		if refreshTTL <= 0 {
-			refreshTTL = 7 * 24 * time.Hour
-		}
-		access, err := tokens.Issue(input.Body.Email, authtoken.TypeAccess, accessTTL)
-		if err != nil {
-			return nil, httpx.NewError(500, "failed to issue access token")
-		}
-		refresh, err := tokens.Issue(input.Body.Email, authtoken.TypeRefresh, refreshTTL)
-		if err != nil {
-			return nil, httpx.NewError(500, "failed to issue refresh token")
-		}
-		return &dynamicOutput{Body: ok(map[string]any{"accessToken": access, "refreshToken": refresh, "user": toMeByEmail(input.Body.Email)})}, nil
-	}, huma.OperationTags("auth"))
+func accessTTL(cfg AuthConfig) time.Duration {
+	ttl := time.Duration(cfg.AccessTTLMin) * time.Minute
+	if ttl <= 0 {
+		return 30 * time.Minute
+	}
+	return ttl
+}
 
-	httpx.MustGroupPost(api, "/auth/refresh", func(ctx context.Context, input *RefreshInput) (*dynamicOutput, error) {
-		rt := strings.TrimSpace(input.Body.RefreshToken)
-		if rt == "" {
-			rt = parseRefreshCookie(ctx)
-		}
-		if rt == "" {
-			return nil, httpx.NewError(401, "missing refresh token")
-		}
-		claims, err := tokens.Parse(ctx, rt)
-		if err != nil || claims.Type != authtoken.TypeRefresh {
-			return nil, httpx.NewError(401, "invalid refresh token")
-		}
-		if isRevoked(ctx, cfg, kvClient, claims) {
-			return nil, httpx.NewError(401, "refresh token revoked")
-		}
-		accessTTL := time.Duration(cfg.AccessTTLMin) * time.Minute
-		if accessTTL <= 0 {
-			accessTTL = 30 * time.Minute
-		}
-		refreshTTL := time.Duration(cfg.RefreshTTLHour) * time.Hour
-		if refreshTTL <= 0 {
-			refreshTTL = 7 * 24 * time.Hour
-		}
-		access, err := tokens.Issue(claims.Email, authtoken.TypeAccess, accessTTL)
-		if err != nil {
-			return nil, httpx.NewError(500, "failed to issue access token")
-		}
-		refresh, err := tokens.Issue(claims.Email, authtoken.TypeRefresh, refreshTTL)
-		if err != nil {
-			return nil, httpx.NewError(500, "failed to issue refresh token")
-		}
-		// rotate refresh token and invalidate the old one
-		revokeToken(ctx, cfg, kvClient, claims)
-		return &dynamicOutput{Body: ok(map[string]string{"accessToken": access, "refreshToken": refresh})}, nil
-	}, huma.OperationTags("auth"))
+func refreshTTL(cfg AuthConfig) time.Duration {
+	ttl := time.Duration(cfg.RefreshTTLHour) * time.Hour
+	if ttl <= 0 {
+		return 7 * 24 * time.Hour
+	}
+	return ttl
+}
 
-	httpx.MustGroupPost(api, "/auth/logout", func(ctx context.Context, input *LogoutInput) (*dynamicOutput, error) {
-		if token := parseBearerToken(ctx); token != "" {
-			if claims, err := tokens.Parse(ctx, token); err == nil && claims.Type == authtoken.TypeAccess {
-				revokeToken(ctx, cfg, kvClient, claims)
+func principalEmail(principal authx.Principal) (string, bool) {
+	if principal.Attributes == nil {
+		return "", false
+	}
+	value, ok := principal.Attributes.Get("email")
+	if !ok {
+		return "", false
+	}
+	email, ok := value.(string)
+	if !ok {
+		return "", false
+	}
+	email = strings.TrimSpace(email)
+	return email, email != ""
+}
+
+func (e *AuthEndpoint) CreateAuthLogin(_ context.Context, input *LoginInput) (*dynamicOutput, error) {
+	if strings.TrimSpace(input.Body.Password) == "" {
+		return nil, httpx.NewError(401, "invalid credentials")
+	}
+
+	tokens := e.tokenService()
+	access, err := tokens.Issue(input.Body.Email, authtoken.TypeAccess, accessTTL(e.cfg))
+	if err != nil {
+		return nil, httpx.NewError(500, "failed to issue access token")
+	}
+	refresh, err := tokens.Issue(input.Body.Email, authtoken.TypeRefresh, refreshTTL(e.cfg))
+	if err != nil {
+		return nil, httpx.NewError(500, "failed to issue refresh token")
+	}
+
+	return &dynamicOutput{Body: ok(map[string]any{
+		"accessToken":  access,
+		"refreshToken": refresh,
+		"user":         toMeByEmail(input.Body.Email),
+	})}, nil
+}
+
+func (e *AuthEndpoint) CreateAuthRefresh(ctx context.Context, input *RefreshInput) (*dynamicOutput, error) {
+	rt := strings.TrimSpace(input.Body.RefreshToken)
+	if rt == "" {
+		rt = parseRefreshCookie(ctx)
+	}
+	if rt == "" {
+		return nil, httpx.NewError(401, "missing refresh token")
+	}
+
+	tokens := e.tokenService()
+	claims, err := tokens.Parse(ctx, rt)
+	if err != nil || claims.Type != authtoken.TypeRefresh {
+		return nil, httpx.NewError(401, "invalid refresh token")
+	}
+	if isRevoked(ctx, e.cfg, e.kvClient, claims) {
+		return nil, httpx.NewError(401, "refresh token revoked")
+	}
+
+	access, err := tokens.Issue(claims.Email, authtoken.TypeAccess, accessTTL(e.cfg))
+	if err != nil {
+		return nil, httpx.NewError(500, "failed to issue access token")
+	}
+	refresh, err := tokens.Issue(claims.Email, authtoken.TypeRefresh, refreshTTL(e.cfg))
+	if err != nil {
+		return nil, httpx.NewError(500, "failed to issue refresh token")
+	}
+
+	revokeToken(ctx, e.cfg, e.kvClient, claims)
+	return &dynamicOutput{Body: ok(map[string]string{"accessToken": access, "refreshToken": refresh})}, nil
+}
+
+func (e *AuthEndpoint) CreateAuthLogout(ctx context.Context, input *LogoutInput) (*dynamicOutput, error) {
+	tokens := e.tokenService()
+	if token := parseBearerToken(ctx); token != "" {
+		if claims, err := tokens.Parse(ctx, token); err == nil && claims.Type == authtoken.TypeAccess {
+			revokeToken(ctx, e.cfg, e.kvClient, claims)
+		}
+	}
+
+	rt := strings.TrimSpace(input.Body.RefreshToken)
+	if rt == "" {
+		rt = parseRefreshCookie(ctx)
+	}
+	if rt != "" {
+		if claims, err := tokens.Parse(ctx, rt); err == nil && claims.Type == authtoken.TypeRefresh {
+			revokeToken(ctx, e.cfg, e.kvClient, claims)
+		}
+	}
+
+	return &dynamicOutput{Body: ok(map[string]bool{"ok": true})}, nil
+}
+
+func (e *AuthEndpoint) GetMe(ctx context.Context, _ *struct{}) (*dynamicOutput, error) {
+	if principal, principalOK := authx.PrincipalFromContextAs[authx.Principal](ctx); principalOK {
+		if email, emailOK := principalEmail(principal); emailOK {
+			return &dynamicOutput{Body: ok(toMeByEmail(email))}, nil
+		}
+	}
+
+	tokens := e.tokenService()
+	if token := parseBearerToken(ctx); token != "" {
+		claims, err := tokens.Parse(ctx, token)
+		if err == nil && claims.Type == authtoken.TypeAccess {
+			if isRevoked(ctx, e.cfg, e.kvClient, claims) {
+				return nil, httpx.NewError(401, "access token revoked")
 			}
+			return &dynamicOutput{Body: ok(toMeByEmail(claims.Email))}, nil
 		}
-		rt := strings.TrimSpace(input.Body.RefreshToken)
-		if rt == "" {
-			rt = parseRefreshCookie(ctx)
-		}
-		if rt != "" {
-			if claims, err := tokens.Parse(ctx, rt); err == nil && claims.Type == authtoken.TypeRefresh {
-				revokeToken(ctx, cfg, kvClient, claims)
-			}
-		}
-		return &dynamicOutput{Body: ok(map[string]bool{"ok": true})}, nil
-	}, huma.OperationTags("auth"))
+		return nil, httpx.NewError(401, "invalid access token")
+	}
 
-	httpx.MustGroupGet(api, "/me", func(ctx context.Context, _ *struct{}) (*dynamicOutput, error) {
-		token := parseBearerToken(ctx)
-		if token != "" {
-			claims, err := tokens.Parse(ctx, token)
-			if err == nil && claims.Type == authtoken.TypeAccess {
-				if isRevoked(ctx, cfg, kvClient, claims) {
-					return nil, httpx.NewError(401, "access token revoked")
-				}
-				return &dynamicOutput{Body: ok(toMeByEmail(claims.Email))}, nil
-			}
-			return nil, httpx.NewError(401, "invalid access token")
-		}
-		email := "admin@example.com"
-		if hctx, ok := ctx.(interface{ Header(string) string }); ok && strings.TrimSpace(hctx.Header("X-User-Email")) != "" {
-			email = strings.TrimSpace(hctx.Header("X-User-Email"))
-		}
-		return &dynamicOutput{Body: ok(toMeByEmail(email))}, nil
-	}, huma.OperationTags("auth"))
+	email := "admin@example.com"
+	if hctx, ok := ctx.(interface{ Header(string) string }); ok && strings.TrimSpace(hctx.Header("X-User-Email")) != "" {
+		email = strings.TrimSpace(hctx.Header("X-User-Email"))
+	}
+	return &dynamicOutput{Body: ok(toMeByEmail(email))}, nil
 }
