@@ -3,8 +3,8 @@ package main
 import (
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo/dix"
-	"github.com/DaiYuANg/arcgo/logx"
+	"github.com/arcgolabs/dix"
+	"github.com/arcgolabs/logx"
 	"github.com/DaiYuANg/jumpa/internal/config"
 	"github.com/DaiYuANg/jumpa/internal/gateway"
 	"github.com/DaiYuANg/jumpa/internal/identity"

@@ -3,7 +3,7 @@ package endpoints
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo/httpx"
+	"github.com/arcgolabs/httpx"
 	"github.com/danielgtaylor/huma/v2"
 )
 

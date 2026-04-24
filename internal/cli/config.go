@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/DaiYuANg/arcgo/configx"
+	"github.com/arcgolabs/configx"
 	cliapp "github.com/DaiYuANg/jumpa/internal/cli/app"
 	"github.com/DaiYuANg/jumpa/internal/sshclient"
 	"github.com/samber/mo"

@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	clienthttp "github.com/DaiYuANg/arcgo/clientx/http"
+	clienthttp "github.com/arcgolabs/clientx/http"
 	"github.com/samber/mo"
 )
 

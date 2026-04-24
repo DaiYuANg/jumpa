@@ -3,7 +3,7 @@ package http
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo/httpx"
+	"github.com/arcgolabs/httpx"
 	apiendpoints "github.com/DaiYuANg/jumpa/internal/api/endpoints"
 	"github.com/DaiYuANg/jumpa/internal/modules/gatewayregistry/application"
 	gatewaydomain "github.com/DaiYuANg/jumpa/internal/modules/gatewayregistry/domain"

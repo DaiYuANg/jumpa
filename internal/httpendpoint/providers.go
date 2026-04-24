@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/DaiYuANg/arcgo/dix"
-	dixadvanced "github.com/DaiYuANg/arcgo/dix/advanced"
-	"github.com/DaiYuANg/arcgo/httpx"
+	"github.com/arcgolabs/dix"
+	dixadvanced "github.com/arcgolabs/dix/advanced"
+	"github.com/arcgolabs/httpx"
 )
 
 const servicePrefix = "jumpa.http.endpoint."

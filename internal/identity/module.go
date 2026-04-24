@@ -1,8 +1,8 @@
 package identity
 
 import (
-	"github.com/DaiYuANg/arcgo/dbx"
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dbx"
+	"github.com/arcgolabs/dix"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
 	db2 "github.com/DaiYuANg/jumpa/internal/db"
 )

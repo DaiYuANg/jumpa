@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DaiYuANg/arcgo/dbx/dialect"
-	"github.com/DaiYuANg/arcgo/dbx/dialect/mysql"
-	"github.com/DaiYuANg/arcgo/dbx/dialect/postgres"
-	sqlitedialect "github.com/DaiYuANg/arcgo/dbx/dialect/sqlite"
+	"github.com/arcgolabs/dbx/dialect"
+	"github.com/arcgolabs/dbx/dialect/mysql"
+	"github.com/arcgolabs/dbx/dialect/postgres"
+	sqlitedialect "github.com/arcgolabs/dbx/dialect/sqlite"
 )
 
 func SelectDialect(driver string) (dialect.Dialect, error) {

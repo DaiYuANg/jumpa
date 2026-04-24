@@ -14,22 +14,24 @@ tool (
 require (
 	charm.land/bubbletea/v2 v2.0.6
 	charm.land/lipgloss/v2 v2.0.3
-	github.com/DaiYuANg/arcgo/authx v0.2.6
-	github.com/DaiYuANg/arcgo/authx/jwt v0.0.2
-	github.com/DaiYuANg/arcgo/clientx v0.3.2
-	github.com/DaiYuANg/arcgo/collectionx v0.1.6
-	github.com/DaiYuANg/arcgo/configx v0.3.2
-	github.com/DaiYuANg/arcgo/dbx v0.3.1
-	github.com/DaiYuANg/arcgo/dbx/idgen v0.0.1
-	github.com/DaiYuANg/arcgo/dbx/migrate v0.1.4
-	github.com/DaiYuANg/arcgo/dix v0.6.0
-	github.com/DaiYuANg/arcgo/eventx v0.3.2
-	github.com/DaiYuANg/arcgo/httpx v0.2.6
-	github.com/DaiYuANg/arcgo/httpx/adapter/fiber v0.1.5
-	github.com/DaiYuANg/arcgo/kvx v0.2.5
-	github.com/DaiYuANg/arcgo/kvx/adapter/valkey v0.2.5
-	github.com/DaiYuANg/arcgo/logx v0.1.4
-	github.com/DaiYuANg/arcgo/pkg/randomport v0.0.4
+	github.com/arcgolabs/authx v0.1.0
+	github.com/arcgolabs/authx/jwt v0.1.0
+	github.com/arcgolabs/clientx v0.1.0
+	github.com/arcgolabs/collectionx v0.2.0
+	github.com/arcgolabs/collectionx/list v0.2.0
+	github.com/arcgolabs/collectionx/set v0.2.0
+	github.com/arcgolabs/configx v0.3.0
+	github.com/arcgolabs/dbx v0.1.1
+	github.com/arcgolabs/dbx/migrate v0.1.0
+	github.com/arcgolabs/dix v0.6.0
+	github.com/arcgolabs/dix/advanced v0.6.0
+	github.com/arcgolabs/eventx v0.1.0
+	github.com/arcgolabs/httpx v0.1.1
+	github.com/arcgolabs/httpx/adapter/fiber v0.1.1
+	github.com/arcgolabs/kvx v0.1.0
+	github.com/arcgolabs/kvx/adapter/valkey v0.1.0
+	github.com/arcgolabs/logx v0.1.0
+	github.com/arcgolabs/pkg/randomport v0.0.5
 	github.com/danielgtaylor/huma/v2 v2.37.3
 	github.com/go-co-op/gocron/v2 v2.21.0
 	github.com/go-playground/validator/v10 v10.30.2
@@ -72,11 +74,6 @@ require (
 	github.com/Antonboom/nilnil v1.1.1 // indirect
 	github.com/Antonboom/testifylint v1.6.4 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/DaiYuANg/arcgo/httpx/adapter/echo v0.0.1 // indirect
-	github.com/DaiYuANg/arcgo/httpx/adapter/gin v0.0.1 // indirect
-	github.com/DaiYuANg/arcgo/httpx/adapter/std v0.1.5 // indirect
-	github.com/DaiYuANg/arcgo/observabilityx v0.2.2 // indirect
-	github.com/DaiYuANg/arcgo/pkg/option v0.0.2 // indirect
 	github.com/Djarvur/go-err113 v0.1.1 // indirect
 	github.com/DmitriyVTitov/size v1.5.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.31.0 // indirect
@@ -98,6 +95,16 @@ require (
 	github.com/alingse/nilnesserr v0.2.0 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
+	github.com/arcgolabs/collectionx/internal v0.2.0 // indirect
+	github.com/arcgolabs/collectionx/interval v0.2.0 // indirect
+	github.com/arcgolabs/collectionx/mapping v0.2.0 // indirect
+	github.com/arcgolabs/collectionx/prefix v0.2.0 // indirect
+	github.com/arcgolabs/collectionx/tree v0.2.0 // indirect
+	github.com/arcgolabs/httpx/adapter/echo v0.1.1 // indirect
+	github.com/arcgolabs/httpx/adapter/gin v0.1.1 // indirect
+	github.com/arcgolabs/httpx/adapter/std v0.1.1 // indirect
+	github.com/arcgolabs/observabilityx v0.2.0 // indirect
+	github.com/arcgolabs/pkg/option v0.0.3 // indirect
 	github.com/ashanbrown/forbidigo/v2 v2.3.0 // indirect
 	github.com/ashanbrown/makezero/v2 v2.1.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
@@ -322,7 +329,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
-	github.com/rs/zerolog v1.35.0 // indirect
+	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/ryancurrah/gomodguard v1.4.1 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.6.0 // indirect
 	github.com/sajari/fuzzy v1.0.0 // indirect

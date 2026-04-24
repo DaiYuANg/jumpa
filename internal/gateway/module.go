@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
 	"github.com/DaiYuANg/jumpa/internal/identity"
 	"github.com/DaiYuANg/jumpa/internal/modules/audit"

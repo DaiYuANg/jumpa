@@ -3,11 +3,11 @@ package dbx
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo/collectionx"
-	"github.com/DaiYuANg/arcgo/dbx"
-	mapperx "github.com/DaiYuANg/arcgo/dbx/mapper"
-	"github.com/DaiYuANg/arcgo/dbx/querydsl"
-	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
+	"github.com/arcgolabs/collectionx"
+	"github.com/arcgolabs/dbx"
+	mapperx "github.com/arcgolabs/dbx/mapper"
+	"github.com/arcgolabs/dbx/querydsl"
+	schemax "github.com/arcgolabs/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 

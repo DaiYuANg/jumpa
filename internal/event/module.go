@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo/dix"
-	"github.com/DaiYuANg/arcgo/eventx"
+	"github.com/arcgolabs/dix"
+	"github.com/arcgolabs/eventx"
 )
 
 var Module = dix.NewModule("event",

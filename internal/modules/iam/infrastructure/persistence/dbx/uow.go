@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/DaiYuANg/arcgo/dbx"
+	"github.com/arcgolabs/dbx"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"
 )
 

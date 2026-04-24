@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/authx"
-	authjwt "github.com/DaiYuANg/arcgo/authx/jwt"
+	"github.com/arcgolabs/authx"
+	authjwt "github.com/arcgolabs/authx/jwt"
 	"github.com/golang-jwt/jwt/v5"
 )
 

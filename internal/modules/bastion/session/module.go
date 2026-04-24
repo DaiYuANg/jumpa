@@ -1,7 +1,7 @@
 package session
 
 import (
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/application"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 )

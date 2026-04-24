@@ -3,7 +3,7 @@ package http
 import (
 	"context"
 
-	"github.com/DaiYuANg/arcgo/httpx"
+	"github.com/arcgolabs/httpx"
 	apiendpoints "github.com/DaiYuANg/jumpa/internal/api/endpoints"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/application"
 	"github.com/danielgtaylor/huma/v2"

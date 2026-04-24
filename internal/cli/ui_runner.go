@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	"github.com/DaiYuANg/jumpa/internal/cli/api"
 	cliapp "github.com/DaiYuANg/jumpa/internal/cli/app"
 )

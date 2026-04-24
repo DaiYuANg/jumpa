@@ -1,8 +1,8 @@
 package endpoints
 
 import (
-	"github.com/DaiYuANg/arcgo/httpx"
-	"github.com/DaiYuANg/arcgo/kvx"
+	"github.com/arcgolabs/httpx"
+	"github.com/arcgolabs/kvx"
 )
 
 type SystemEndpoint struct{}

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo/configx"
-	"github.com/DaiYuANg/arcgo/dix"
-	"github.com/DaiYuANg/arcgo/pkg/randomport"
+	"github.com/arcgolabs/configx"
+	"github.com/arcgolabs/dix"
+	"github.com/arcgolabs/pkg/randomport"
 )
 
 var Module = dix.NewModule("config",

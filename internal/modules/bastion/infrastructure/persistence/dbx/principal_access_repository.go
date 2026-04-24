@@ -4,12 +4,12 @@ import (
 	"context"
 	"strings"
 
-	"github.com/DaiYuANg/arcgo/collectionx"
-	"github.com/DaiYuANg/arcgo/dbx"
-	columnx "github.com/DaiYuANg/arcgo/dbx/column"
-	mapperx "github.com/DaiYuANg/arcgo/dbx/mapper"
-	"github.com/DaiYuANg/arcgo/dbx/querydsl"
-	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
+	"github.com/arcgolabs/collectionx"
+	"github.com/arcgolabs/dbx"
+	columnx "github.com/arcgolabs/dbx/column"
+	mapperx "github.com/arcgolabs/dbx/mapper"
+	"github.com/arcgolabs/dbx/querydsl"
+	schemax "github.com/arcgolabs/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 )
 

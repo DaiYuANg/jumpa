@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/clientx"
-	clienthttp "github.com/DaiYuANg/arcgo/clientx/http"
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/clientx"
+	clienthttp "github.com/arcgolabs/clientx/http"
+	"github.com/arcgolabs/dix"
 	"github.com/DaiYuANg/jumpa/internal/cli/api"
 )
 

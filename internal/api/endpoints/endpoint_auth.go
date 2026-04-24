@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/httpx"
-	"github.com/DaiYuANg/arcgo/kvx"
+	"github.com/arcgolabs/httpx"
+	"github.com/arcgolabs/kvx"
 	"github.com/DaiYuANg/jumpa/internal/authtoken"
 	"github.com/danielgtaylor/huma/v2"
 )

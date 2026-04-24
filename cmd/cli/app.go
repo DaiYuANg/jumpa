@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/DaiYuANg/arcgo/logx"
+	"github.com/arcgolabs/logx"
 )
 
 func Run() {

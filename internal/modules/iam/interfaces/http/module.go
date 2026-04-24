@@ -1,7 +1,7 @@
 package http
 
 import (
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	"github.com/DaiYuANg/jumpa/internal/httpendpoint"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam"
 )

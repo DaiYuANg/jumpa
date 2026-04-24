@@ -1,7 +1,7 @@
 package audit
 
 import (
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	"github.com/DaiYuANg/jumpa/internal/modules/audit/application"
 	"github.com/DaiYuANg/jumpa/internal/modules/audit/infrastructure/persistence/wire"
 	"github.com/DaiYuANg/jumpa/internal/modules/audit/ports"

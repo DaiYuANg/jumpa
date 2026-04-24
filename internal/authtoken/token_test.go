@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	authjwt "github.com/DaiYuANg/arcgo/authx/jwt"
+	authjwt "github.com/arcgolabs/authx/jwt"
 	"github.com/golang-jwt/jwt/v5"
 )
 

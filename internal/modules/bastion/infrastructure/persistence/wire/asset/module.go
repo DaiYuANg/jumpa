@@ -1,8 +1,8 @@
 package asset
 
 import (
-	"github.com/DaiYuANg/arcgo/dbx"
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dbx"
+	"github.com/arcgolabs/dix"
 	dbxrepo "github.com/DaiYuANg/jumpa/internal/modules/bastion/infrastructure/persistence/dbx"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 )

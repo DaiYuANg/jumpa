@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/dix"
-	"github.com/DaiYuANg/arcgo/kvx"
+	"github.com/arcgolabs/dix"
+	"github.com/arcgolabs/kvx"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
 	kv2 "github.com/DaiYuANg/jumpa/internal/kv"
 	"github.com/go-co-op/gocron/v2"

@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/dbx"
-	columnx "github.com/DaiYuANg/arcgo/dbx/column"
-	"github.com/DaiYuANg/arcgo/dbx/idgen"
-	"github.com/DaiYuANg/arcgo/dbx/querydsl"
-	"github.com/DaiYuANg/arcgo/dbx/repository"
-	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
+	"github.com/arcgolabs/dbx"
+	columnx "github.com/arcgolabs/dbx/column"
+	"github.com/arcgolabs/dbx/idgen"
+	"github.com/arcgolabs/dbx/querydsl"
+	"github.com/arcgolabs/dbx/repository"
+	schemax "github.com/arcgolabs/dbx/schema"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"
 	"github.com/samber/mo"
 )

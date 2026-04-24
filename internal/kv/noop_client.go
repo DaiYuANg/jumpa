@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/collectionx"
-	"github.com/DaiYuANg/arcgo/kvx"
+	"github.com/arcgolabs/collectionx"
+	"github.com/arcgolabs/kvx"
 )
 
 var errKVDisabled = errors.New("kv client is disabled")

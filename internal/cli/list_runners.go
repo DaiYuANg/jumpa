@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	"github.com/DaiYuANg/jumpa/internal/cli/api"
 	"github.com/samber/lo"
 )

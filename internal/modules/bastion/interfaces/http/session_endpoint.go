@@ -1,7 +1,7 @@
 package http
 
 import (
-	"github.com/DaiYuANg/arcgo/httpx"
+	"github.com/arcgolabs/httpx"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/application"
 )
 

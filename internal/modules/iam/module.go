@@ -3,8 +3,8 @@ package iam
 import (
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo/dix"
-	"github.com/DaiYuANg/arcgo/eventx"
+	"github.com/arcgolabs/dix"
+	"github.com/arcgolabs/eventx"
 	"github.com/DaiYuANg/jumpa/internal/event"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/application"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/infrastructure/persistence/wire"

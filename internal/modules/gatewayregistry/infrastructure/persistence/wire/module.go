@@ -1,8 +1,8 @@
 package wire
 
 import (
-	"github.com/DaiYuANg/arcgo/dbx"
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dbx"
+	"github.com/arcgolabs/dix"
 	db2 "github.com/DaiYuANg/jumpa/internal/db"
 	dbxrepo "github.com/DaiYuANg/jumpa/internal/modules/gatewayregistry/infrastructure/persistence/dbx"
 	"github.com/DaiYuANg/jumpa/internal/modules/gatewayregistry/ports"

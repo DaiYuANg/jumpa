@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/DaiYuANg/arcgo/dbx"
-	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dbx"
+	schemax "github.com/arcgolabs/dbx/schema"
+	"github.com/arcgolabs/dix"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
 	"github.com/DaiYuANg/jumpa/internal/schema"
 )

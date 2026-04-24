@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	cli "github.com/DaiYuANg/jumpa/internal/cli"
 	"github.com/samber/mo"
 	"github.com/spf13/cobra"

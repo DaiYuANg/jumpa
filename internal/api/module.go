@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/DaiYuANg/arcgo/dix"
-	"github.com/DaiYuANg/arcgo/kvx"
+	"github.com/arcgolabs/dix"
+	"github.com/arcgolabs/kvx"
 	apiendpoints "github.com/DaiYuANg/jumpa/internal/api/endpoints"
 	"github.com/DaiYuANg/jumpa/internal/config"
 	"github.com/DaiYuANg/jumpa/internal/httpendpoint"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/kvx"
-	kvlock "github.com/DaiYuANg/arcgo/kvx/module/lock"
+	"github.com/arcgolabs/kvx"
+	kvlock "github.com/arcgolabs/kvx/module/lock"
 	"github.com/go-co-op/gocron/v2"
 )
 

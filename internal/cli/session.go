@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"strings"
 
-	collectionlist "github.com/DaiYuANg/arcgo/collectionx/list"
+	collectionlist "github.com/arcgolabs/collectionx/list"
 	cliapi "github.com/DaiYuANg/jumpa/internal/cli/api"
 	cliapp "github.com/DaiYuANg/jumpa/internal/cli/app"
 	"github.com/samber/lo"

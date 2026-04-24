@@ -1,7 +1,7 @@
 package access
 
 import (
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	config2 "github.com/DaiYuANg/jumpa/internal/config"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/application"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/ports"

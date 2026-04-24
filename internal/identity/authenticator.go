@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/DaiYuANg/arcgo/collectionx"
+	"github.com/arcgolabs/collectionx"
 )
 
 var (

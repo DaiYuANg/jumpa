@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/DaiYuANg/arcgo/eventx"
+	"github.com/arcgolabs/eventx"
 	"github.com/DaiYuANg/jumpa/internal/event"
 	iamdomain "github.com/DaiYuANg/jumpa/internal/modules/iam/domain"
 	"github.com/DaiYuANg/jumpa/internal/modules/iam/ports"

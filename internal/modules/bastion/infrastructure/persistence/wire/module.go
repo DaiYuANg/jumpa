@@ -1,7 +1,7 @@
 package wire
 
 import (
-	"github.com/DaiYuANg/arcgo/dix"
+	"github.com/arcgolabs/dix"
 	db2 "github.com/DaiYuANg/jumpa/internal/db"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/infrastructure/persistence/wire/access"
 	"github.com/DaiYuANg/jumpa/internal/modules/bastion/infrastructure/persistence/wire/asset"

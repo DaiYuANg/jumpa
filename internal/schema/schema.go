@@ -3,9 +3,9 @@ package schema
 import (
 	"time"
 
-	columnx "github.com/DaiYuANg/arcgo/dbx/column"
-	"github.com/DaiYuANg/arcgo/dbx/idgen"
-	schemax "github.com/DaiYuANg/arcgo/dbx/schema"
+	columnx "github.com/arcgolabs/dbx/column"
+	"github.com/arcgolabs/dbx/idgen"
+	schemax "github.com/arcgolabs/dbx/schema"
 )
 
 type UserRow struct {
